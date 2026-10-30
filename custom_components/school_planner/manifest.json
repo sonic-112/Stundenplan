@@ -6,8 +6,9 @@
   ],
   "config_flow": true,
   "dependencies": [
-    "http",
     "frontend",
+    "http",
+    "panel_custom",
     "websocket_api"
   ],
   "documentation": "https://github.com/sonic-112/stundenplan",
@@ -16,5 +17,5 @@
   "issue_tracker": "https://github.com/sonic-112/stundenplan/issues",
   "requirements": [],
   "single_config_entry": true,
-  "version": "0.1.2-beta.1"
+  "version": "0.1.2-beta.2"
 }

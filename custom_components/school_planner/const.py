@@ -9,6 +9,9 @@ EVENT_UPDATED = f"{DOMAIN}_updated"
 
 URL_BASE = "/school_planner_static"
 CARD_FILE = "school-planner-card.js"
+PANEL_FILE = "school-planner-panel.js"
+PANEL_PATH = "school-planner"
+PANEL_ELEMENT = "school-planner-panel"
 
 THEMES = ["clear", "vivid", "night"]
 

@@ -1,5 +1,5 @@
 /* School Planner card – no build step, no dependencies. */
-const SP_VERSION = "0.1.2-beta.1";
+const SP_VERSION = "0.1.2-beta.2";
 const SP_PALETTE = ["#4C8DF6", "#F0647D", "#34B67A", "#F5A524", "#9B6BF2", "#1FB5C9", "#E8743B", "#7C8DA5"];
 
 const SP_I18N = {
@@ -23,7 +23,7 @@ const SP_I18N = {
     stubTitle: "Schulplaner",
     changed: "Geändert", changeDay: "Tag ändern", scopeDay: "Nur am {date}", scopeStandard: "Standardplan ändern ({day})",
     offDay: "Ganzer Tag frei", revert: "Auf Standardplan zurücksetzen", scope: "Gilt für", dayHint: "Wechsel des Geltungsbereichs lädt die Stunden neu; nicht gespeicherte Eingaben gehen verloren.",
-    homeward: "Heimweg", homewardOpts: { pickup: "Wird abgeholt", bus: "Bus", alone: "Geht allein / zu Fuß" }, pickupLabel: "Name des Abholung-Tabs",
+    homeward: "Heimweg", homewardOpts: { pickup: "Wird abgeholt", bus: "Bus", alone: "Geht allein / zu Fuß" }, pickupLabel: "Name des Abholung-Tabs", sidebar: "In der Seitenleiste anzeigen",
   },
   en: {
     title: "School Planner", all: "All", day: "Day", week: "Week", compare: "Compare", pickup: "Pickup",
@@ -45,7 +45,7 @@ const SP_I18N = {
     stubTitle: "School Planner",
     changed: "Changed", changeDay: "Change day", scopeDay: "Only on {date}", scopeStandard: "Change regular timetable ({day})",
     offDay: "Whole day off", revert: "Revert to regular timetable", scope: "Applies to", dayHint: "Switching the scope reloads the lessons; unsaved input is lost.",
-    homeward: "Way home", homewardOpts: { pickup: "Picked up", bus: "Bus", alone: "Goes alone / on foot" }, pickupLabel: "Name of the pickup tab",
+    homeward: "Way home", homewardOpts: { pickup: "Picked up", bus: "Bus", alone: "Goes alone / on foot" }, pickupLabel: "Name of the pickup tab", sidebar: "Show in the sidebar",
   },
 };
 
@@ -422,7 +422,8 @@ class SchoolPlannerCard extends HTMLElement {
       const s = this._data.settings;
       inner = `<div class="form"><label>${t.theme}<select data-f="theme">${["clear", "vivid", "night"].map((k) => `<option value="${k}" ${s.theme === k ? "selected" : ""}>${t.themes[k]}</option>`).join("")}</select></label>
         <label>${t.accent}<input type="color" data-f="accent" value="${spEsc(s.accent || "#4c8df6")}"></label>
-        <label>${t.pickupLabel}<input data-f="pickup_label" maxlength="30" value="${spEsc(s.pickup_label || t.pickup)}"></label></div>`;
+        <label>${t.pickupLabel}<input data-f="pickup_label" maxlength="30" value="${spEsc(s.pickup_label || t.pickup)}"></label>
+        <label style="display:flex;gap:8px;align-items:center;color:var(--sp-text)"><input type="checkbox" data-f="sidebar" ${s.sidebar === false ? "" : "checked"}>${t.sidebar}</label></div>`;
     }
     return `<div class="row" style="margin-bottom:12px">${ed.draft ? "" : tabs}</div>${inner}${err}<div class="notice">${t.adminOnly}</div>`;
   }
@@ -493,6 +494,10 @@ class SchoolPlannerCard extends HTMLElement {
   _onInput(e) {
     const el = e.target;
     const d = this._edit.draft;
+    if (el.dataset.f === "sidebar") {
+      if (e.type === "change") this._ws({ type: "school_planner/save_settings", sidebar: el.checked });
+      return;
+    }
     if (["theme", "accent", "pickup_label"].includes(el.dataset.f)) {
       if (e.type === "change" && (el.dataset.f !== "pickup_label" || el.value.trim())) this._ws({ type: "school_planner/save_settings", [el.dataset.f]: el.value.trim() });
       return;

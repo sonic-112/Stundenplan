@@ -227,12 +227,14 @@ class SchoolPlannerOptionsFlow(OptionsFlow):
                     "theme": user_input["theme"],
                     "accent": _hex(accent) if accent else None,
                     "pickup_label": user_input["pickup_label"].strip() or DEFAULT_PICKUP_LABEL,
+                    "sidebar": user_input["sidebar"],
                 }
             )
             return self._finish()
         suggested = {
             "theme": settings["theme"],
             "pickup_label": settings.get("pickup_label", DEFAULT_PICKUP_LABEL),
+            "sidebar": settings.get("sidebar", True),
         }
         if settings.get("accent"):
             suggested["accent"] = _rgb(settings["accent"])
@@ -247,6 +249,7 @@ class SchoolPlannerOptionsFlow(OptionsFlow):
                 ),
                 vol.Optional("accent"): selector.ColorRGBSelector(),
                 vol.Required("pickup_label"): str,
+                vol.Required("sidebar"): selector.BooleanSelector(),
             }
         )
         return self.async_show_form(

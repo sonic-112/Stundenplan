@@ -6,6 +6,7 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers import device_registry as dr
+from homeassistant.components.frontend import DATA_PANELS
 from homeassistant.setup import async_setup_component
 from homeassistant.util import dt as dt_util
 
@@ -195,3 +196,24 @@ def test_services_yaml_matches_registered_services() -> None:
     assert set(described) == {"set_lessons", "set_day_override", "clear_day_override"}
     for service, body in described.items():
         assert all(isinstance(key, str) for key in body["fields"]), service
+
+
+async def test_sidebar_panel_follows_setting_and_unload(hass: HomeAssistant) -> None:
+    entry = await _setup(hass)
+    store = entry.runtime_data.store
+    panel = hass.data[DATA_PANELS]["school-planner"]
+    assert panel.sidebar_icon == "mdi:school"
+    assert panel.config["_panel_custom"]["name"] == "school-planner-panel"
+    assert panel.config["_panel_custom"]["module_url"].startswith("/school_planner_static/school-planner-panel.js")
+
+    store.update_settings({"sidebar": False})
+    await hass.async_block_till_done()
+    assert "school-planner" not in hass.data[DATA_PANELS]
+
+    store.update_settings({"sidebar": True})
+    await hass.async_block_till_done()
+    assert "school-planner" in hass.data[DATA_PANELS]
+
+    assert await hass.config_entries.async_unload(entry.entry_id)
+    await hass.async_block_till_done()
+    assert "school-planner" not in hass.data[DATA_PANELS]

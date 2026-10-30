@@ -8,7 +8,7 @@
 
 Home-Assistant-Integration für Stundenpläne mehrerer Kinder – mit Dashboard-Karte, Vergleich der Schulzeiten und Abholübersicht.
 
-> Status: frühe Version (0.1.2-beta.1, Beta).
+> Status: frühe Version (0.1.2-beta.2, Beta).
 
 ## Installation über HACS
 
@@ -23,6 +23,8 @@ Die Dashboard-Karte wird von der Integration automatisch geladen, es ist keine R
 HACS bietet standardmäßig die neueste **stabile** Version an. Neues wird zuerst als **Beta** veröffentlicht (auf GitHub als Pre-release markiert, die Version enthält `-beta`). Wer früh testen will, öffnet das Repository in HACS, wählt **Neu herunterladen** und schaltet **Beta-Versionen anzeigen** ein (die Bezeichnung kann je nach HACS-Version abweichen). Nach dem Test wird aus einer Beta die nächste stabile Version. Die Versionsnummern wachsen in kleinen Schritten (0.1.x).
 
 ## Einrichten
+
+Die Integration legt in der Seitenleiste den Eintrag **Schulplaner** an. Er zeigt die komplette Karte, auch wenn du noch kein Dashboard dafür hast. Dort richtest du Kinder und Schulen im Tab **Bearbeiten** ein. Unter **Konfigurieren → Design** (oder in der Karte im Tab Bearbeiten → Design) lässt sich der Seitenleisten-Eintrag ausschalten.
 
 * **Einstellungen → Geräte & Dienste → School Planner → Konfigurieren**: Kinder, Schulen und Design anlegen.
 * **Stundenplan pflegen**: In der Karte den Tab **Bearbeiten** öffnen (nur Administratoren), oder per Dienst `school_planner.set_lessons`.

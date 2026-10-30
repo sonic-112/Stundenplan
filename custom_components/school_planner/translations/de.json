@@ -89,7 +89,8 @@
         "data": {
           "theme": "Design",
           "accent": "Akzentfarbe (optional)",
-          "pickup_label": "Name des Abholung-Tabs"
+          "pickup_label": "Name des Abholung-Tabs",
+          "sidebar": "In der Seitenleiste anzeigen"
         }
       }
     },

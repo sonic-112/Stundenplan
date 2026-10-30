@@ -74,4 +74,5 @@ SETTINGS_FIELDS = {
     vol.Optional("theme"): vol.In(THEMES),
     vol.Optional("accent"): vol.Any(None, vol.Match(COLOR_RE)),
     vol.Optional("pickup_label"): vol.All(cv.string, vol.Length(min=1, max=30)),
+    vol.Optional("sidebar"): cv.boolean,
 }

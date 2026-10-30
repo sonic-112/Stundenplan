@@ -89,7 +89,8 @@
         "data": {
           "theme": "Theme",
           "accent": "Accent color (optional)",
-          "pickup_label": "Name of the pickup tab"
+          "pickup_label": "Name of the pickup tab",
+          "sidebar": "Show in the sidebar"
         }
       }
     },

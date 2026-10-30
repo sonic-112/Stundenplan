@@ -30,6 +30,7 @@ def _empty() -> dict[str, Any]:
             "theme": DEFAULT_THEME,
             "accent": None,
             "pickup_label": DEFAULT_PICKUP_LABEL,
+            "sidebar": True,
         },
         "schools": {},
         "children": {},

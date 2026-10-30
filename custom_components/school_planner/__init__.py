@@ -7,7 +7,8 @@ from pathlib import Path
 
 import voluptuous as vol
 
-from homeassistant.components.frontend import add_extra_js_url
+from homeassistant.components import panel_custom
+from homeassistant.components.frontend import DATA_PANELS, add_extra_js_url, async_remove_panel
 from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
@@ -19,7 +20,7 @@ from homeassistant.helpers.event import async_track_time_change
 from homeassistant.helpers.typing import ConfigType
 from homeassistant.loader import async_get_integration
 
-from .const import CARD_FILE, DOMAIN, URL_BASE
+from .const import CARD_FILE, DOMAIN, PANEL_ELEMENT, PANEL_FILE, PANEL_PATH, URL_BASE
 from .coordinator import SchoolPlannerCoordinator
 from .schemas import LESSON_SCHEMA, OVERRIDE_FIELDS, iso_date
 from .store import PlannerStore
@@ -53,6 +54,24 @@ class RuntimeData:
 
 
 type SchoolPlannerConfigEntry = ConfigEntry[RuntimeData]
+
+
+async def _async_sync_panel(hass: HomeAssistant, store: PlannerStore) -> None:
+    """Show or hide the sidebar entry according to the settings."""
+    wanted = bool(store.data["settings"].get("sidebar", True))
+    present = PANEL_PATH in hass.data.get(DATA_PANELS, {})
+    if wanted and not present:
+        integration = await async_get_integration(hass, DOMAIN)
+        await panel_custom.async_register_panel(
+            hass,
+            frontend_url_path=PANEL_PATH,
+            webcomponent_name=PANEL_ELEMENT,
+            sidebar_title="Schulplaner" if hass.config.language.startswith("de") else "School Planner",
+            sidebar_icon="mdi:school",
+            module_url=f"{URL_BASE}/{PANEL_FILE}?v={integration.version}",
+        )
+    elif present and not wanted:
+        async_remove_panel(hass, PANEL_PATH)
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
@@ -116,6 +135,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SchoolPlannerConfigEntry
 
     @callback
     def _store_changed() -> None:
+        hass.async_create_task(_async_sync_panel(hass, store))
         coordinator.async_set_updated_data(coordinator.compute())
         registry = dr.async_get(hass)
         known = set(store.data["children"])
@@ -132,10 +152,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: SchoolPlannerConfigEntry
 
     entry.async_on_unload(store.async_add_listener(_store_changed))
     entry.async_on_unload(async_track_time_change(hass, _tick, second=0))
+    await _async_sync_panel(hass, store)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: SchoolPlannerConfigEntry) -> bool:
     """Unload a config entry."""
+    if PANEL_PATH in hass.data.get(DATA_PANELS, {}):
+        async_remove_panel(hass, PANEL_PATH)
     return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
