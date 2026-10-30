@@ -31,9 +31,20 @@ class Lesson:
         )
 
 
-def lessons_on(timetable: dict[str, list[dict[str, Any]]], day: date) -> list[Lesson]:
-    """Return the lessons of a day sorted by start time."""
-    raw = timetable.get(str(day.weekday()), [])
+def lessons_on(
+    timetable: dict[str, list[dict[str, Any]]],
+    day: date,
+    overrides: dict[str, dict[str, Any]] | None = None,
+) -> list[Lesson]:
+    """Return the lessons of a day sorted by start time.
+
+    An override for that exact date replaces the regular weekday plan.
+    """
+    override = (overrides or {}).get(day.isoformat())
+    if override is not None:
+        raw = [] if override.get("off") else override.get("lessons", [])
+    else:
+        raw = timetable.get(str(day.weekday()), [])
     return sorted((Lesson.from_dict(item) for item in raw), key=lambda l: l.start)
 
 
@@ -62,13 +73,14 @@ def next_lesson(
     *,
     skip_today: bool = False,
     horizon: int = 14,
+    overrides: dict[str, dict[str, Any]] | None = None,
 ) -> tuple[date, Lesson] | None:
     """Return the next lesson that starts after ``now``."""
     for offset in range(horizon):
         if offset == 0 and skip_today:
             continue
         day = now.date() + timedelta(days=offset)
-        for lesson in lessons_on(timetable, day):
+        for lesson in lessons_on(timetable, day, overrides):
             if offset > 0 or lesson.start > now.time():
                 return day, lesson
     return None

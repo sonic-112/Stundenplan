@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from datetime import time
+from datetime import date, time
 from typing import Any
 
 import voluptuous as vol
 
 from homeassistant.helpers import config_validation as cv
 
-from .const import THEMES
+from .const import HOMEWARD, THEMES
 
 TIME_RE = r"^([01]\d|2[0-3]):[0-5]\d$"
 COLOR_RE = r"^#[0-9a-fA-F]{6}$"
@@ -36,6 +36,21 @@ LESSON_SCHEMA = vol.All(
     _lesson,
 )
 
+
+def iso_date(value: Any) -> str:
+    """Accept an ISO date (YYYY-MM-DD) and return it normalised."""
+    try:
+        return date.fromisoformat(str(value)).isoformat()
+    except ValueError as err:
+        raise vol.Invalid("invalid date") from err
+
+
+OVERRIDE_FIELDS = {
+    vol.Required("date"): iso_date,
+    vol.Optional("off", default=False): cv.boolean,
+    vol.Optional("lessons", default=list): [LESSON_SCHEMA],
+}
+
 WEEKDAYS = [str(i) for i in range(7)]
 
 TIMETABLE_SCHEMA = vol.Schema({vol.In(WEEKDAYS): [LESSON_SCHEMA]})
@@ -45,6 +60,7 @@ CHILD_FIELDS = {
     vol.Optional("color"): vol.Match(COLOR_RE),
     vol.Optional("school_id"): vol.Any(None, cv.string),
     vol.Optional("holiday_entity"): vol.Any(None, cv.entity_id),
+    vol.Optional("homeward"): vol.In(HOMEWARD),
     vol.Optional("timetable"): TIMETABLE_SCHEMA,
 }
 
@@ -57,4 +73,5 @@ SCHOOL_FIELDS = {
 SETTINGS_FIELDS = {
     vol.Optional("theme"): vol.In(THEMES),
     vol.Optional("accent"): vol.Any(None, vol.Match(COLOR_RE)),
+    vol.Optional("pickup_label"): vol.All(cv.string, vol.Length(min=1, max=30)),
 }

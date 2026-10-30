@@ -7,6 +7,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers import device_registry as dr
 from homeassistant.setup import async_setup_component
+from homeassistant.util import dt as dt_util
 
 from custom_components.school_planner.const import DOMAIN
 
@@ -71,3 +72,84 @@ async def test_websocket_get_data(hass: HomeAssistant, hass_ws_client) -> None:
     await client.send_json({"id": 2, "type": f"{DOMAIN}/get_data"})
     result = (await client.receive_json())["result"]
     assert [c["name"] for c in result["children"].values()] == ["Emma"]
+
+
+async def test_day_override_service_and_state(hass: HomeAssistant) -> None:
+    entry = await _setup(hass)
+    store = entry.runtime_data.store
+    coordinator = entry.runtime_data.coordinator
+    child_id = store.upsert_child(None, {"name": "Emma"})
+    today = dt_util.now()
+    store.set_day(
+        child_id,
+        str(today.weekday()),
+        [{"start": "00:00", "end": "23:59", "subject": "Maths", "room": "", "teacher": ""}],
+    )
+    await hass.async_block_till_done()
+    assert coordinator.data.children[child_id].span is not None
+
+    await hass.services.async_call(
+        DOMAIN,
+        "set_day_override",
+        {"child": "Emma", "date": today.date().isoformat(), "off": True},
+        blocking=True,
+    )
+    await hass.async_block_till_done()
+    state = coordinator.data.children[child_id]
+    assert state.free and state.changed_today and state.span is None
+    # the regular plan is untouched
+    assert store.data["children"][child_id]["timetable"][str(today.weekday())]
+
+    await hass.services.async_call(
+        DOMAIN,
+        "clear_day_override",
+        {"child": "Emma", "date": today.date().isoformat()},
+        blocking=True,
+    )
+    await hass.async_block_till_done()
+    assert coordinator.data.children[child_id].span is not None
+
+
+async def test_override_without_lessons_counts_as_off_and_old_ones_are_pruned(
+    hass: HomeAssistant,
+) -> None:
+    entry = await _setup(hass)
+    store = entry.runtime_data.store
+    child_id = store.upsert_child(None, {"name": "Emma"})
+    store.set_override(child_id, "2099-01-05", off=False, lessons=[])
+    assert store.data["children"][child_id]["overrides"]["2099-01-05"]["off"] is True
+    store.set_override(child_id, "2001-01-01", off=True, lessons=[])
+    assert "2001-01-01" not in store.data["children"][child_id]["overrides"]
+
+
+async def test_websocket_override_and_child_defaults(hass: HomeAssistant, hass_ws_client) -> None:
+    await _setup(hass)
+    client = await hass_ws_client(hass)
+    await client.send_json({"id": 1, "type": f"{DOMAIN}/save_child", "name": "Emma"})
+    child_id = (await client.receive_json())["result"]["child_id"]
+    await client.send_json(
+        {
+            "id": 2,
+            "type": f"{DOMAIN}/save_override",
+            "child_id": child_id,
+            "date": "2099-03-02",
+            "lessons": [{"start": "08:00", "end": "08:45", "subject": "Art"}],
+        }
+    )
+    assert (await client.receive_json())["success"]
+    await client.send_json({"id": 3, "type": f"{DOMAIN}/get_data"})
+    child = (await client.receive_json())["result"]["children"][child_id]
+    assert child["homeward"] == "pickup"
+    assert child["overrides"]["2099-03-02"]["lessons"][0]["subject"] == "Art"
+    await client.send_json(
+        {"id": 4, "type": f"{DOMAIN}/clear_override", "child_id": child_id, "date": "2099-03-02"}
+    )
+    assert (await client.receive_json())["success"]
+    await client.send_json(
+        {"id": 5, "type": f"{DOMAIN}/save_override", "child_id": "nope", "date": "2099-03-02", "off": True}
+    )
+    assert (await client.receive_json())["error"]["code"] == "not_found"
+    await client.send_json(
+        {"id": 6, "type": f"{DOMAIN}/save_override", "child_id": child_id, "date": "kein-datum"}
+    )
+    assert not (await client.receive_json())["success"]

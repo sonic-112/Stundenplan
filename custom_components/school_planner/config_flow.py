@@ -10,7 +10,7 @@ from homeassistant.config_entries import ConfigFlow, ConfigFlowResult, OptionsFl
 from homeassistant.core import callback
 from homeassistant.helpers import selector
 
-from .const import DOMAIN, THEMES
+from .const import DEFAULT_HOMEWARD, DEFAULT_PICKUP_LABEL, DOMAIN, HOMEWARD, THEMES
 
 
 def _hex(rgb: list[int]) -> str:
@@ -102,6 +102,13 @@ class SchoolPlannerOptionsFlow(OptionsFlow):
                     mode=selector.SelectSelectorMode.DROPDOWN,
                 )
             )
+        fields[vol.Required("homeward")] = selector.SelectSelector(
+            selector.SelectSelectorConfig(
+                options=HOMEWARD,
+                translation_key="homeward",
+                mode=selector.SelectSelectorMode.DROPDOWN,
+            )
+        )
         fields[vol.Optional("holiday_entity")] = selector.EntitySelector(
             selector.EntitySelectorConfig(
                 domain=["calendar", "binary_sensor", "input_boolean", "schedule"]
@@ -116,10 +123,11 @@ class SchoolPlannerOptionsFlow(OptionsFlow):
                 "color": _hex(user_input["color"]),
                 "school_id": user_input.get("school_id"),
                 "holiday_entity": user_input.get("holiday_entity"),
+                "homeward": user_input.get("homeward", DEFAULT_HOMEWARD),
             }
             self._store.upsert_child(child_id, fields)
             return self._finish()
-        suggested: dict[str, Any] = {"color": _rgb(None)}
+        suggested: dict[str, Any] = {"color": _rgb(None), "homeward": DEFAULT_HOMEWARD}
         if child_id:
             child = self._store.data["children"][child_id]
             suggested = {
@@ -127,6 +135,7 @@ class SchoolPlannerOptionsFlow(OptionsFlow):
                 "color": _rgb(child["color"]),
                 "school_id": child.get("school_id"),
                 "holiday_entity": child.get("holiday_entity"),
+                "homeward": child.get("homeward", DEFAULT_HOMEWARD),
             }
         return self.async_show_form(
             step_id=step,
@@ -214,10 +223,17 @@ class SchoolPlannerOptionsFlow(OptionsFlow):
         if user_input is not None:
             accent = user_input.get("accent")
             self._store.update_settings(
-                {"theme": user_input["theme"], "accent": _hex(accent) if accent else None}
+                {
+                    "theme": user_input["theme"],
+                    "accent": _hex(accent) if accent else None,
+                    "pickup_label": user_input["pickup_label"].strip() or DEFAULT_PICKUP_LABEL,
+                }
             )
             return self._finish()
-        suggested = {"theme": settings["theme"]}
+        suggested = {
+            "theme": settings["theme"],
+            "pickup_label": settings.get("pickup_label", DEFAULT_PICKUP_LABEL),
+        }
         if settings.get("accent"):
             suggested["accent"] = _rgb(settings["accent"])
         schema = vol.Schema(
@@ -230,6 +246,7 @@ class SchoolPlannerOptionsFlow(OptionsFlow):
                     )
                 ),
                 vol.Optional("accent"): selector.ColorRGBSelector(),
+                vol.Required("pickup_label"): str,
             }
         )
         return self.async_show_form(

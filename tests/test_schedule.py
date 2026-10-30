@@ -65,3 +65,20 @@ def test_compare_without_overlap_and_empty():
     result = compare([_entry("a", (8, 0), (9, 0)), _entry("b", (10, 0), (11, 0))])
     assert result["together_from"] is None
     assert compare([_entry("a", None, None)])["pickup_order"] == []
+
+
+def test_override_replaces_weekday_plan():
+    overrides = {
+        "2026-11-02": {"off": False, "lessons": [{"start": "10:00", "end": "10:45", "subject": "Sport"}]},
+        "2026-11-04": {"off": True, "lessons": []},
+    }
+    assert [l.subject for l in lessons_on(TIMETABLE, MONDAY, overrides)] == ["Sport"]
+    assert lessons_on(TIMETABLE, date(2026, 11, 4), overrides) == []
+    # other weeks keep the regular plan
+    assert len(lessons_on(TIMETABLE, date(2026, 11, 9), overrides)) == 2
+
+
+def test_next_lesson_respects_overrides():
+    overrides = {"2026-11-04": {"off": True, "lessons": []}}
+    result = next_lesson(TIMETABLE, datetime(2026, 11, 2, 12, 0), overrides=overrides)
+    assert result[0] == date(2026, 11, 9)  # Wednesday is off, so Monday of next week

@@ -1,5 +1,5 @@
 /* School Planner card – no build step, no dependencies. */
-const SP_VERSION = "0.1.0";
+const SP_VERSION = "0.2.0";
 const SP_PALETTE = ["#4C8DF6", "#F0647D", "#34B67A", "#F5A524", "#9B6BF2", "#1FB5C9", "#E8743B", "#7C8DA5"];
 
 const SP_I18N = {
@@ -21,6 +21,9 @@ const SP_I18N = {
     daysShort: ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"],
     daysLong: ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"],
     stubTitle: "Schulplaner",
+    changed: "Geändert", changeDay: "Tag ändern", scopeDay: "Nur am {date}", scopeStandard: "Standardplan ändern ({day})",
+    offDay: "Ganzer Tag frei", revert: "Auf Standardplan zurücksetzen", scope: "Gilt für", dayHint: "Wechsel des Geltungsbereichs lädt die Stunden neu; nicht gespeicherte Eingaben gehen verloren.",
+    homeward: "Heimweg", homewardOpts: { pickup: "Wird abgeholt", bus: "Bus", alone: "Geht allein / zu Fuß" }, pickupLabel: "Name des Abholung-Tabs",
   },
   en: {
     title: "School Planner", all: "All", day: "Day", week: "Week", compare: "Compare", pickup: "Pickup",
@@ -40,6 +43,9 @@ const SP_I18N = {
     daysShort: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
     daysLong: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
     stubTitle: "School Planner",
+    changed: "Changed", changeDay: "Change day", scopeDay: "Only on {date}", scopeStandard: "Change regular timetable ({day})",
+    offDay: "Whole day off", revert: "Revert to regular timetable", scope: "Applies to", dayHint: "Switching the scope reloads the lessons; unsaved input is lost.",
+    homeward: "Way home", homewardOpts: { pickup: "Picked up", bus: "Bus", alone: "Goes alone / on foot" }, pickupLabel: "Name of the pickup tab",
   },
 };
 
@@ -48,6 +54,7 @@ const spMin = (t) => { const [h, m] = t.split(":").map(Number); return h * 60 + 
 const spFmt = (m) => `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
 const spWeekday = (d) => (d.getDay() + 6) % 7;
 const spSameDay = (a, b) => a.toDateString() === b.toDateString();
+const spYmd = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 const spHash = (s) => [...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7);
 const spSubjectColor = (l) => l.color || SP_PALETTE[spHash(l.subject.toLowerCase()) % SP_PALETTE.length];
 
@@ -123,6 +130,10 @@ ha-card { display:block; background:var(--sp-bg); color:var(--sp-text); border-r
 @media (max-width:640px) { .lrow { grid-template-columns:1fr 1fr; } .lrow .wide { grid-column:1 / -1; } }
 .list-item { display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--sp-border); }
 .list-item .grow { flex:1; }
+.chg { color:var(--sp-accent); font-weight:600; }
+.btn.icon { padding:2px 8px; margin-left:auto; }
+.scope { display:grid; gap:6px; }
+.scope label { display:flex; align-items:center; gap:8px; color:var(--sp-text); font-size:.9rem; }
 .notice { color:var(--sp-muted); font-size:.82rem; margin-top:8px; }
 `;
 
@@ -195,13 +206,23 @@ class SchoolPlannerCard extends HTMLElement {
   }
   get _theme() { return this._config?.theme || this._data?.settings?.theme || "clear"; }
 
-  _lessons(child, date) {
+  _override(child, date) { return child.overrides?.[spYmd(date)] || null; }
+  _standard(child, date) {
     return (child.timetable?.[String(spWeekday(date))] || []).slice().sort((a, b) => spMin(a.start) - spMin(b.start));
   }
+  _lessons(child, date) {
+    const o = this._override(child, date);
+    if (o) return o.off ? [] : o.lessons.slice().sort((a, b) => spMin(a.start) - spMin(b.start));
+    return this._standard(child, date);
+  }
   _isFree(child, date) {
+    if (this._override(child, date)?.off) return true;
     const ent = child.holiday_entity;
     return !!ent && spSameDay(date, new Date()) && this._hass?.states?.[ent]?.state === "on";
   }
+  _isAdmin() { return !!this._hass?.user?.is_admin; }
+  _pickupChildren() { return this._children.filter((c) => (c.homeward || "pickup") === "pickup"); }
+  _viewLabel(v) { return v === "pickup" ? (this._data?.settings?.pickup_label || this._t.pickup) : this._t[v]; }
   _span(child, date) {
     if (this._isFree(child, date)) return null;
     const ls = this._lessons(child, date);
@@ -225,13 +246,14 @@ class SchoolPlannerCard extends HTMLElement {
       body = `<div class="body"><div class="empty">${spEsc(this._loadError || "…")}</div></div>`;
     } else {
       const children = this._children;
-      const views = ["day", "week", "compare", "pickup", "edit"];
+      const views = ["day", "week", "compare", "pickup", "edit"].filter((v) => v !== "pickup" || this._pickupChildren().length);
+      if (!views.includes(this._view)) this._view = "day";
       const chips = [`<button class="chip ${this._sel === "all" ? "active" : ""}" data-act="sel" data-id="all">${t.all}</button>`]
         .concat(children.map((c) => `<button class="chip ${this._sel === c.id ? "active" : ""}" style="--c:${spEsc(c.color)}" data-act="sel" data-id="${spEsc(c.id)}"><span class="dot"></span>${spEsc(c.name)}</button>`));
       body = `
         <div class="head"><div class="title">${spEsc(this._config.title || t.title)}</div>
           <div class="row">${this._view === "edit" ? "" : chips.join("")}</div></div>
-        <div class="tabs">${views.map((v) => `<button class="tab ${this._view === v ? "active" : ""}" data-act="view" data-id="${v}">${t[v]}</button>`).join("")}</div>
+        <div class="tabs">${views.map((v) => `<button class="tab ${this._view === v ? "active" : ""}" data-act="view" data-id="${v}">${spEsc(this._viewLabel(v))}</button>`).join("")}</div>
         <div class="body">${this._renderView()}</div>`;
     }
     this.shadowRoot.innerHTML = `<style>${SP_CSS}</style><ha-card>${body}</ha-card>`;
@@ -244,6 +266,7 @@ class SchoolPlannerCard extends HTMLElement {
 
   _renderView() {
     const t = this._t;
+    if (this._edit.draft?.kind === "day") return this._dayForm(this._edit.draft);
     if (this._view === "edit") return this._renderEdit();
     if (!this._children.length) return `<div class="empty">${t.noChildren}<br>${t.setup}</div>`;
     switch (this._view) {
@@ -261,6 +284,16 @@ class SchoolPlannerCard extends HTMLElement {
     return `<div class="nav"><button class="btn" data-act="day" data-id="-1">‹</button>
       <div class="label">${spEsc(label)}${spSameDay(d, new Date()) ? "" : ` <button class="btn" data-act="day" data-id="0">${t.today}</button>`}</div>
       <button class="btn" data-act="day" data-id="1">›</button></div>`;
+  }
+
+  _lessonRows(list, attr) {
+    const t = this._t;
+    return list.map((l, i) => `<div class="lrow">
+      <input type="time" ${attr}="${i}" data-lf="start" value="${spEsc(l.start)}"><input type="time" ${attr}="${i}" data-lf="end" value="${spEsc(l.end)}">
+      <input class="wide" placeholder="${t.subject}" ${attr}="${i}" data-lf="subject" value="${spEsc(l.subject)}">
+      <input placeholder="${t.room}" ${attr}="${i}" data-lf="room" value="${spEsc(l.room)}">
+      <input class="wide" placeholder="${t.teacher}" ${attr}="${i}" data-lf="teacher" value="${spEsc(l.teacher)}">
+      <button class="btn danger" data-act="del-lesson" data-id="${i}">✕</button></div>`).join("");
   }
 
   _lessonHtml(l, now) {
@@ -281,6 +314,7 @@ class SchoolPlannerCard extends HTMLElement {
       const ls = free ? [] : this._lessons(child, this._date);
       const span = this._span(child, this._date);
       const school = this._school(child);
+      const changed = !!this._override(child, this._date);
       let prevEnd = null;
       const items = ls.map((l) => {
         const gap = prevEnd !== null ? spMin(l.start) - prevEnd : 0;
@@ -288,8 +322,9 @@ class SchoolPlannerCard extends HTMLElement {
         const now = today && nowM >= spMin(l.start) && nowM < spMin(l.end);
         return (gap >= 5 ? `<div class="pause">${t.pause} · ${gap} ${t.min}</div>` : "") + this._lessonHtml(l, now);
       }).join("");
-      return `<div class="col"><h3 style="--c:${spEsc(child.color)}"><span class="dot"></span>${spEsc(child.name)}</h3>
-        <div class="sub">${[school?.name, span ? `${spFmt(span.start)}–${spFmt(span.end)}` : ""].filter(Boolean).map(spEsc).join(" · ")}</div>
+      const edit = this._isAdmin() ? `<button class="btn icon" title="${spEsc(t.changeDay)}" data-act="edit-day" data-id="${spEsc(child.id)}">✎</button>` : "";
+      return `<div class="col"><h3 style="--c:${spEsc(child.color)}"><span class="dot"></span>${spEsc(child.name)}${edit}</h3>
+        <div class="sub">${[school?.name, span ? `${spFmt(span.start)}–${spFmt(span.end)}` : ""].filter(Boolean).map(spEsc).join(" · ")}${changed ? ` · <span class="chg">${t.changed}</span>` : ""}</div>
         ${items || `<div class="empty">${free ? t.free : t.noLessons}</div>`}</div>`;
     }).join("");
     return `${this._dayNav()}<div class="cols">${cols}</div>`;
@@ -299,10 +334,13 @@ class SchoolPlannerCard extends HTMLElement {
     const t = this._t;
     const child = this._selected()[0] || this._children[0];
     const todayIdx = spWeekday(new Date());
-    const days = [0, 1, 2, 3, 4].concat([5, 6].filter((i) => (child.timetable?.[String(i)] || []).length));
+    const monday = new Date(); monday.setHours(12, 0, 0, 0); monday.setDate(monday.getDate() - todayIdx);
+    const dateOf = (i) => { const d = new Date(monday); d.setDate(d.getDate() + i); return d; };
+    const days = [0, 1, 2, 3, 4].concat([5, 6].filter((i) => this._lessons(child, dateOf(i)).length));
     const cols = days.map((i) => {
-      const ls = (child.timetable?.[String(i)] || []).slice().sort((a, b) => spMin(a.start) - spMin(b.start));
-      return `<div class="${i === todayIdx ? "today" : ""}"><h4>${t.daysShort[i]}</h4>${ls.map((l) => this._lessonHtml(l, false)).join("") || `<div class="empty">–</div>`}</div>`;
+      const ls = this._lessons(child, dateOf(i));
+      const changed = !!this._override(child, dateOf(i));
+      return `<div class="${i === todayIdx ? "today" : ""}"><h4>${t.daysShort[i]}${changed ? ` <span class="chg" title="${spEsc(t.changed)}">●</span>` : ""}</h4>${ls.map((l) => this._lessonHtml(l, false)).join("") || `<div class="empty">–</div>`}</div>`;
     }).join("");
     return `<div class="sub" style="margin-bottom:8px">${spEsc(child.name)}${this._school(child) ? " · " + spEsc(this._school(child).name) : ""}</div><div class="week">${cols}</div>`;
   }
@@ -346,7 +384,7 @@ class SchoolPlannerCard extends HTMLElement {
     const t = this._t;
     const today = spSameDay(this._date, new Date());
     const nowM = this._nowMin();
-    const rows = this._selected().map((c) => ({ c, span: this._span(c, this._date) })).filter((r) => r.span).sort((a, b) => a.span.end - b.span.end);
+    const rows = this._selected().filter((c) => (c.homeward || "pickup") === "pickup").map((c) => ({ c, span: this._span(c, this._date) })).filter((r) => r.span).sort((a, b) => a.span.end - b.span.end);
     if (!rows.length) return `${this._dayNav()}<div class="empty">${t.noPickup}</div>`;
     const items = rows.map(({ c, span }) => {
       const school = this._school(c);
@@ -383,7 +421,8 @@ class SchoolPlannerCard extends HTMLElement {
     } else {
       const s = this._data.settings;
       inner = `<div class="form"><label>${t.theme}<select data-f="theme">${["clear", "vivid", "night"].map((k) => `<option value="${k}" ${s.theme === k ? "selected" : ""}>${t.themes[k]}</option>`).join("")}</select></label>
-        <label>${t.accent}<input type="color" data-f="accent" value="${spEsc(s.accent || "#4c8df6")}"></label></div>`;
+        <label>${t.accent}<input type="color" data-f="accent" value="${spEsc(s.accent || "#4c8df6")}"></label>
+        <label>${t.pickupLabel}<input data-f="pickup_label" maxlength="30" value="${spEsc(s.pickup_label || t.pickup)}"></label></div>`;
     }
     return `<div class="row" style="margin-bottom:12px">${ed.draft ? "" : tabs}</div>${inner}${err}<div class="notice">${t.adminOnly}</div>`;
   }
@@ -392,21 +431,53 @@ class SchoolPlannerCard extends HTMLElement {
     const t = this._t;
     const schools = Object.entries(this._data.schools).map(([id, s]) => `<option value="${spEsc(id)}" ${d.school_id === id ? "selected" : ""}>${spEsc(s.name)}</option>`).join("");
     const days = t.daysShort.map((n, i) => `<button class="chip ${d.day === i ? "active" : ""}" data-act="eday" data-id="${i}">${n}${(d.timetable[String(i)] || []).length ? " •" : ""}</button>`).join("");
-    const rows = (d.timetable[String(d.day)] || []).map((l, i) => `<div class="lrow">
-      <input type="time" data-l="${i}" data-lf="start" value="${spEsc(l.start)}"><input type="time" data-l="${i}" data-lf="end" value="${spEsc(l.end)}">
-      <input class="wide" placeholder="${t.subject}" data-l="${i}" data-lf="subject" value="${spEsc(l.subject)}">
-      <input placeholder="${t.room}" data-l="${i}" data-lf="room" value="${spEsc(l.room)}">
-      <input class="wide" placeholder="${t.teacher}" data-l="${i}" data-lf="teacher" value="${spEsc(l.teacher)}">
-      <button class="btn danger" data-act="del-lesson" data-id="${i}">✕</button></div>`).join("");
+    const rows = this._lessonRows(d.timetable[String(d.day)] || [], "data-l");
+    const homeward = ["pickup", "bus", "alone"].map((k) => `<option value="${k}" ${(d.homeward || "pickup") === k ? "selected" : ""}>${spEsc(t.homewardOpts[k])}</option>`).join("");
     return `<div class="form">
       <label>${t.name}<input data-f="name" value="${spEsc(d.name)}"></label>
       <label>${t.color}<input type="color" data-f="color" value="${spEsc(d.color)}"></label>
       <label>${t.school}<select data-f="school_id"><option value="">${t.noSchool}</option>${schools}</select></label>
+      <label>${t.homeward}<select data-f="homeward">${homeward}</select></label>
       <label>${t.holidayEntity}<input data-f="holiday_entity" placeholder="calendar.schulferien" value="${spEsc(d.holiday_entity || "")}"></label>
       <div class="row">${days}</div>${rows}
       <div><button class="btn" data-act="add-lesson">${t.addLesson}</button></div>
       <div class="row"><button class="btn primary" data-act="save-child">${t.save}</button><button class="btn" data-act="cancel">${t.cancel}</button>
       ${d.id ? `<button class="btn danger" data-act="del-child">${t.del}</button>` : ""}</div></div>`;
+  }
+
+  _dayForm(d) {
+    const t = this._t;
+    const date = new Date(`${d.date}T12:00:00`);
+    const label = `${t.daysShort[spWeekday(date)]}, ${date.toLocaleDateString(this._hass?.language || "en", { day: "numeric", month: "short" })}`;
+    const rows = d.off && d.scope === "day" ? "" : this._lessonRows(d.lessons, "data-dl");
+    return `<div class="form">
+      <h3 style="margin:0">${spEsc(d.name)} · ${spEsc(label)}</h3>
+      <div class="scope"><span class="notice" style="margin:0">${t.scope}</span>
+        <label><input type="radio" name="scope" data-f="scope" value="day" ${d.scope === "day" ? "checked" : ""}>${spEsc(t.scopeDay.replace("{date}", label))}</label>
+        <label><input type="radio" name="scope" data-f="scope" value="standard" ${d.scope === "standard" ? "checked" : ""}>${spEsc(t.scopeStandard.replace("{day}", t.daysLong[spWeekday(date)]))}</label></div>
+      ${d.scope === "day" ? `<label style="display:flex;gap:8px;align-items:center;color:var(--sp-text)"><input type="checkbox" data-f="off" ${d.off ? "checked" : ""}>${t.offDay}</label>` : ""}
+      ${rows}
+      ${d.off && d.scope === "day" ? "" : `<div><button class="btn" data-act="add-lesson">${t.addLesson}</button></div>`}
+      <div class="notice" style="margin:0">${t.dayHint}</div>
+      ${d.error ? `<div class="notice" style="color:#e5484d">${spEsc(d.error)}</div>` : ""}
+      <div class="row"><button class="btn primary" data-act="save-day">${t.save}</button><button class="btn" data-act="cancel">${t.cancel}</button>
+      ${d.hadOverride ? `<button class="btn danger" data-act="revert-day">${t.revert}</button>` : ""}</div></div>`;
+  }
+
+  _openDay(childId) {
+    const child = this._children.find((c) => c.id === childId);
+    const o = this._override(child, this._date);
+    this._edit.draft = {
+      kind: "day", id: childId, name: child.name, date: spYmd(this._date), scope: "day", off: !!o?.off, hadOverride: !!o, error: null,
+      lessons: JSON.parse(JSON.stringify(this._lessons(child, this._date))),
+    };
+  }
+
+  _reloadDayLessons(d) {
+    const child = this._children.find((c) => c.id === d.id);
+    const date = new Date(`${d.date}T12:00:00`);
+    d.lessons = JSON.parse(JSON.stringify(d.scope === "day" ? this._lessons(child, date) : this._standard(child, date)));
+    d.off = d.scope === "day" ? !!this._override(child, date)?.off : false;
   }
 
   _schoolForm(d) {
@@ -422,11 +493,17 @@ class SchoolPlannerCard extends HTMLElement {
   _onInput(e) {
     const el = e.target;
     const d = this._edit.draft;
-    if (el.dataset.f === "theme" || el.dataset.f === "accent") {
-      if (e.type === "change") this._ws({ type: "school_planner/save_settings", [el.dataset.f]: el.value });
+    if (["theme", "accent", "pickup_label"].includes(el.dataset.f)) {
+      if (e.type === "change" && (el.dataset.f !== "pickup_label" || el.value.trim())) this._ws({ type: "school_planner/save_settings", [el.dataset.f]: el.value.trim() });
       return;
     }
     if (!d) return;
+    if (d.kind === "day") {
+      if (el.dataset.dl !== undefined) d.lessons[Number(el.dataset.dl)][el.dataset.lf] = el.value;
+      else if (el.dataset.f === "scope" && e.type === "change") { d.scope = el.value; this._reloadDayLessons(d); this._render(); }
+      else if (el.dataset.f === "off" && e.type === "change") { d.off = el.checked; this._render(); }
+      return;
+    }
     if (el.dataset.f) d[el.dataset.f] = el.value;
     if (el.dataset.l !== undefined) d.timetable[String(d.day)][Number(el.dataset.l)][el.dataset.lf] = el.value;
   }
@@ -434,7 +511,7 @@ class SchoolPlannerCard extends HTMLElement {
   async _ws(msg) {
     try {
       this._edit.error = null;
-      return await this._hass.callWS(msg);
+      return { result: await this._hass.callWS(msg) };
     } catch (err) {
       this._edit.error = err?.message || String(err);
       this._render();
@@ -453,10 +530,26 @@ class SchoolPlannerCard extends HTMLElement {
       case "view": this._view = id; ed.draft = null; break;
       case "day": this._date = id === "0" ? new Date() : new Date(this._date.getTime() + Number(id) * 86400000); break;
       case "etab": ed.tab = id; break;
-      case "new-child": ed.draft = { kind: "child", id: null, name: "", color: SP_PALETTE[this._children.length % SP_PALETTE.length], school_id: "", holiday_entity: "", timetable: {}, day: 0 }; break;
+      case "edit-day": this._openDay(id); break;
+      case "save-day": {
+        const lessons = d.lessons.filter((l) => l.subject.trim()).map((l) => ({ ...l, subject: l.subject.trim() }));
+        let msg;
+        if (d.scope === "day") msg = { type: "school_planner/save_override", child_id: d.id, date: d.date, off: d.off, lessons: d.off ? [] : lessons };
+        else {
+          const child = this._children.find((c) => c.id === d.id);
+          const wd = String(spWeekday(new Date(`${d.date}T12:00:00`)));
+          msg = { type: "school_planner/save_child", child_id: d.id, name: child.name, timetable: { ...child.timetable, [wd]: lessons } };
+        }
+        if (await this._ws(msg)) { ed.draft = null; await this._load(); return; }
+        d.error = ed.error; this._render(); return;
+      }
+      case "revert-day":
+        if (await this._ws({ type: "school_planner/clear_override", child_id: d.id, date: d.date })) { ed.draft = null; await this._load(); return; }
+        d.error = ed.error; this._render(); return;
+      case "new-child": ed.draft = { kind: "child", id: null, name: "", color: SP_PALETTE[this._children.length % SP_PALETTE.length], school_id: "", holiday_entity: "", homeward: "pickup", timetable: {}, day: 0 }; break;
       case "edit-child": {
         const c = this._children.find((x) => x.id === id);
-        ed.draft = { kind: "child", ...JSON.parse(JSON.stringify(c)), id, school_id: c.school_id || "", holiday_entity: c.holiday_entity || "", day: 0 };
+        ed.draft = { kind: "child", ...JSON.parse(JSON.stringify(c)), id, school_id: c.school_id || "", holiday_entity: c.holiday_entity || "", homeward: c.homeward || "pickup", day: 0 };
         break;
       }
       case "new-school": ed.draft = { kind: "school", id: null, name: "", address: "", zone: "" }; break;
@@ -464,18 +557,18 @@ class SchoolPlannerCard extends HTMLElement {
       case "cancel": ed.draft = null; break;
       case "eday": d.day = Number(id); break;
       case "add-lesson": {
-        const list = (d.timetable[String(d.day)] ||= []);
+        const list = d.kind === "day" ? d.lessons : (d.timetable[String(d.day)] ||= []);
         const prev = list[list.length - 1];
         const start = prev ? prev.end : "08:00";
         const end = spFmt(Math.min(spMin(start) + 45, 23 * 60 + 59));
         list.push({ start, end, subject: "", room: "", teacher: "" });
         break;
       }
-      case "del-lesson": d.timetable[String(d.day)].splice(Number(id), 1); break;
+      case "del-lesson": (d.kind === "day" ? d.lessons : d.timetable[String(d.day)]).splice(Number(id), 1); break;
       case "save-child": {
         const timetable = {};
         for (const [k, ls] of Object.entries(d.timetable)) timetable[k] = ls.filter((l) => l.subject.trim()).map((l) => ({ ...l, subject: l.subject.trim() }));
-        const msg = { type: "school_planner/save_child", name: d.name.trim(), color: d.color, school_id: d.school_id || null, holiday_entity: d.holiday_entity || null, timetable };
+        const msg = { type: "school_planner/save_child", name: d.name.trim(), color: d.color, school_id: d.school_id || null, holiday_entity: d.holiday_entity || null, homeward: d.homeward || "pickup", timetable };
         if (d.id) msg.child_id = d.id;
         if (await this._ws(msg)) { ed.draft = null; await this._load(); return; }
         return;

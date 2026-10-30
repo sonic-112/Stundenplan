@@ -1,14 +1,20 @@
 {
   "domain": "school_planner",
   "name": "School Planner",
-  "codeowners": ["@sonic-112"],
+  "codeowners": [
+    "@sonic-112"
+  ],
   "config_flow": true,
-  "dependencies": ["http", "frontend", "websocket_api"],
+  "dependencies": [
+    "http",
+    "frontend",
+    "websocket_api"
+  ],
   "documentation": "https://github.com/sonic-112/stundenplan",
   "integration_type": "service",
   "iot_class": "calculated",
   "issue_tracker": "https://github.com/sonic-112/stundenplan/issues",
   "requirements": [],
   "single_config_entry": true,
-  "version": "0.1.0"
+  "version": "0.2.0"
 }

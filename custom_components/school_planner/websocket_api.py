@@ -10,7 +10,7 @@ from homeassistant.components import websocket_api
 from homeassistant.core import HomeAssistant, callback
 
 from .const import DOMAIN
-from .schemas import CHILD_FIELDS, SCHOOL_FIELDS, SETTINGS_FIELDS
+from .schemas import CHILD_FIELDS, OVERRIDE_FIELDS, SCHOOL_FIELDS, SETTINGS_FIELDS, iso_date
 
 
 def _store(hass: HomeAssistant):
@@ -41,6 +41,8 @@ def async_register_websocket_api(hass: HomeAssistant) -> None:
         ws_save_school,
         ws_delete_school,
         ws_save_settings,
+        ws_save_override,
+        ws_clear_override,
     ):
         websocket_api.async_register_command(hass, handler)
 
@@ -136,4 +138,46 @@ def ws_delete_school(hass, connection, msg, store) -> None:
 def ws_save_settings(hass, connection, msg, store) -> None:
     """Update global settings."""
     store.update_settings({k: v for k, v in msg.items() if k in {str(f) for f in SETTINGS_FIELDS}})
+    connection.send_result(msg["id"])
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/save_override",
+        vol.Required("child_id"): str,
+        **OVERRIDE_FIELDS,
+    }
+)
+@websocket_api.require_admin
+@callback
+@_require_store
+def ws_save_override(hass, connection, msg, store) -> None:
+    """Change a single date for one child (substitution, cancelled lessons, day off)."""
+    try:
+        store.set_override(
+            msg["child_id"], msg["date"], off=msg["off"], lessons=msg["lessons"]
+        )
+    except KeyError:
+        connection.send_error(msg["id"], "not_found", "Unknown child")
+        return
+    connection.send_result(msg["id"])
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/clear_override",
+        vol.Required("child_id"): str,
+        vol.Required("date"): iso_date,
+    }
+)
+@websocket_api.require_admin
+@callback
+@_require_store
+def ws_clear_override(hass, connection, msg, store) -> None:
+    """Return a date to the regular timetable."""
+    try:
+        store.clear_override(msg["child_id"], msg["date"])
+    except KeyError:
+        connection.send_error(msg["id"], "not_found", "Unknown child")
+        return
     connection.send_result(msg["id"])

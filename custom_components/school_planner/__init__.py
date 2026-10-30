@@ -21,7 +21,7 @@ from homeassistant.loader import async_get_integration
 
 from .const import CARD_FILE, DOMAIN, URL_BASE
 from .coordinator import SchoolPlannerCoordinator
-from .schemas import LESSON_SCHEMA
+from .schemas import LESSON_SCHEMA, OVERRIDE_FIELDS, iso_date
 from .store import PlannerStore
 from .websocket_api import async_register_websocket_api
 
@@ -36,6 +36,11 @@ SET_LESSONS_SCHEMA = vol.Schema(
         vol.Required("weekday"): vol.In(WEEKDAY_KEYS),
         vol.Required("lessons"): vol.All(cv.ensure_list, [LESSON_SCHEMA]),
     }
+)
+
+SET_DAY_OVERRIDE_SCHEMA = vol.Schema({vol.Required("child"): cv.string, **OVERRIDE_FIELDS})
+CLEAR_DAY_OVERRIDE_SCHEMA = vol.Schema(
+    {vol.Required("child"): cv.string, vol.Required("date"): iso_date}
 )
 
 
@@ -59,7 +64,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     add_extra_js_url(hass, f"{URL_BASE}/{CARD_FILE}?v={integration.version}")
     async_register_websocket_api(hass)
 
-    async def set_lessons(call: ServiceCall) -> None:
+    def _find_child(call: ServiceCall) -> tuple[PlannerStore, str]:
         entries = hass.config_entries.async_loaded_entries(DOMAIN)
         if not entries:
             raise ServiceValidationError("School Planner is not set up")
@@ -67,15 +72,37 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         wanted = call.data["child"].strip().casefold()
         for child_id, child in store.data["children"].items():
             if child["name"].casefold() == wanted or child_id == call.data["child"]:
-                store.set_day(
-                    child_id,
-                    str(WEEKDAY_KEYS.index(call.data["weekday"])),
-                    call.data["lessons"],
-                )
-                return
+                return store, child_id
         raise ServiceValidationError(f"Unknown child: {call.data['child']}")
 
+    async def set_lessons(call: ServiceCall) -> None:
+        store, child_id = _find_child(call)
+        store.set_day(
+            child_id,
+            str(WEEKDAY_KEYS.index(call.data["weekday"])),
+            call.data["lessons"],
+        )
+
+    async def set_day_override(call: ServiceCall) -> None:
+        store, child_id = _find_child(call)
+        store.set_override(
+            child_id,
+            call.data["date"],
+            off=call.data["off"],
+            lessons=call.data["lessons"],
+        )
+
+    async def clear_day_override(call: ServiceCall) -> None:
+        store, child_id = _find_child(call)
+        store.clear_override(child_id, call.data["date"])
+
     hass.services.async_register(DOMAIN, "set_lessons", set_lessons, SET_LESSONS_SCHEMA)
+    hass.services.async_register(
+        DOMAIN, "set_day_override", set_day_override, SET_DAY_OVERRIDE_SCHEMA
+    )
+    hass.services.async_register(
+        DOMAIN, "clear_day_override", clear_day_override, CLEAR_DAY_OVERRIDE_SCHEMA
+    )
     return True
 
 

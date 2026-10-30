@@ -11,6 +11,11 @@ URL_BASE = "/school_planner_static"
 CARD_FILE = "school-planner-card.js"
 
 THEMES = ["clear", "vivid", "night"]
+
+HOMEWARD = ["pickup", "bus", "alone"]
+DEFAULT_HOMEWARD = "pickup"
+DEFAULT_PICKUP_LABEL = "Abholung"
+OVERRIDE_KEEP_DAYS = 60
 DEFAULT_THEME = "clear"
 
 DEFAULT_COLORS = [

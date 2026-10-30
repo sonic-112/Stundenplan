@@ -4,15 +4,21 @@ from __future__ import annotations
 
 import uuid
 from collections.abc import Callable
+from datetime import timedelta
 from typing import Any
 
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.storage import Store
 
+from homeassistant.util import dt as dt_util
+
 from .const import (
     DEFAULT_COLORS,
+    DEFAULT_HOMEWARD,
+    DEFAULT_PICKUP_LABEL,
     DEFAULT_THEME,
     EVENT_UPDATED,
+    OVERRIDE_KEEP_DAYS,
     STORAGE_KEY,
     STORAGE_VERSION,
 )
@@ -20,7 +26,11 @@ from .const import (
 
 def _empty() -> dict[str, Any]:
     return {
-        "settings": {"theme": DEFAULT_THEME, "accent": None},
+        "settings": {
+            "theme": DEFAULT_THEME,
+            "accent": None,
+            "pickup_label": DEFAULT_PICKUP_LABEL,
+        },
         "schools": {},
         "children": {},
     }
@@ -40,6 +50,11 @@ class PlannerStore:
         stored = await self._store.async_load()
         if stored:
             self.data = {**_empty(), **stored}
+            self.data["settings"] = {**_empty()["settings"], **self.data["settings"]}
+            for child in self.data["children"].values():
+                child.setdefault("homeward", DEFAULT_HOMEWARD)
+                child.setdefault("overrides", {})
+                self._prune(child)
 
     @callback
     def async_add_listener(self, listener: Callable[[], None]) -> Callable[[], None]:
@@ -68,7 +83,9 @@ class PlannerStore:
                 "color": color,
                 "school_id": None,
                 "holiday_entity": None,
+                "homeward": DEFAULT_HOMEWARD,
                 "timetable": {},
+                "overrides": {},
             }
         elif child_id not in children:
             raise KeyError(child_id)
@@ -89,6 +106,35 @@ class PlannerStore:
         child = self.data["children"][child_id]
         child["timetable"][weekday] = sorted(lessons, key=lambda l: l["start"])
         self._changed()
+
+    @callback
+    def set_override(
+        self, child_id: str, day: str, *, off: bool, lessons: list[dict[str, Any]]
+    ) -> None:
+        """Replace one date with its own lessons or mark it as off.
+
+        A date without lessons is the same as a date that is off.
+        """
+        child = self.data["children"][child_id]
+        off = off or not lessons
+        child["overrides"][day] = {
+            "off": off,
+            "lessons": [] if off else sorted(lessons, key=lambda l: l["start"]),
+        }
+        self._prune(child)
+        self._changed()
+
+    @callback
+    def clear_override(self, child_id: str, day: str) -> None:
+        """Return a date to the regular timetable."""
+        if self.data["children"][child_id]["overrides"].pop(day, None) is not None:
+            self._changed()
+
+    @staticmethod
+    def _prune(child: dict[str, Any]) -> None:
+        """Drop overrides that lie far in the past."""
+        limit = (dt_util.now().date() - timedelta(days=OVERRIDE_KEEP_DAYS)).isoformat()
+        child["overrides"] = {d: o for d, o in child["overrides"].items() if d >= limit}
 
     # -- schools ----------------------------------------------------------
 

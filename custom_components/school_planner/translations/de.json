@@ -30,7 +30,8 @@
           "name": "Name",
           "color": "Farbe",
           "school_id": "Schule",
-          "holiday_entity": "Frei-Entität (an = schulfrei)"
+          "holiday_entity": "Frei-Entität (an = schulfrei)",
+          "homeward": "Heimweg"
         }
       },
       "edit_child": {
@@ -45,7 +46,8 @@
           "name": "Name",
           "color": "Farbe",
           "school_id": "Schule",
-          "holiday_entity": "Frei-Entität (an = schulfrei)"
+          "holiday_entity": "Frei-Entität (an = schulfrei)",
+          "homeward": "Heimweg"
         }
       },
       "remove_child": {
@@ -86,7 +88,8 @@
         "title": "Design",
         "data": {
           "theme": "Design",
-          "accent": "Akzentfarbe (optional)"
+          "accent": "Akzentfarbe (optional)",
+          "pickup_label": "Name des Abholung-Tabs"
         }
       }
     },
@@ -141,6 +144,13 @@
         "sat": "Samstag",
         "sun": "Sonntag"
       }
+    },
+    "homeward": {
+      "options": {
+        "pickup": "Wird abgeholt",
+        "bus": "Bus",
+        "alone": "Geht allein / zu Fuß"
+      }
     }
   },
   "services": {
@@ -159,6 +169,42 @@
         "lessons": {
           "name": "Stunden",
           "description": "Liste von Stunden mit Start, Ende, Fach und optional Raum, Lehrer und Farbe."
+        }
+      }
+    },
+    "set_day_override": {
+      "name": "Tag ändern",
+      "description": "Ersetzt den Plan eines einzelnen Datums für ein Kind (Vertretung, Ausfall, ganzer Tag frei). Der Standardplan bleibt unverändert.",
+      "fields": {
+        "child": {
+          "name": "Kind",
+          "description": "Name des Kindes."
+        },
+        "date": {
+          "name": "Datum",
+          "description": "Betroffener Tag."
+        },
+        "off": {
+          "name": "Ganzer Tag frei",
+          "description": "Kein Unterricht an diesem Tag."
+        },
+        "lessons": {
+          "name": "Stunden",
+          "description": "Stunden des Tages. Leer bedeutet: kein Unterricht."
+        }
+      }
+    },
+    "clear_day_override": {
+      "name": "Änderung zurücknehmen",
+      "description": "Setzt ein Datum auf den Standardplan zurück.",
+      "fields": {
+        "child": {
+          "name": "Kind",
+          "description": "Name des Kindes."
+        },
+        "date": {
+          "name": "Datum",
+          "description": "Zurückzusetzender Tag."
         }
       }
     }

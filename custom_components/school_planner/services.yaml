@@ -17,3 +17,39 @@ set_lessons:
       example: '[{"start": "08:00", "end": "08:45", "subject": "Maths", "room": "A12"}]'
       selector:
         object:
+
+set_day_override:
+  fields:
+    child:
+      required: true
+      example: "Emma"
+      selector:
+        text:
+    date:
+      required: true
+      example: "2026-11-05"
+      selector:
+        date:
+    off:
+      required: false
+      default: false
+      selector:
+        boolean:
+    lessons:
+      required: false
+      example: '[{"start": "08:00", "end": "08:45", "subject": "Art", "room": "B3"}]'
+      selector:
+        object:
+
+clear_day_override:
+  fields:
+    child:
+      required: true
+      example: "Emma"
+      selector:
+        text:
+    date:
+      required: true
+      example: "2026-11-05"
+      selector:
+        date:

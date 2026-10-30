@@ -62,6 +62,7 @@ def _school_attrs(state: ChildState) -> dict[str, Any]:
         "school": school.get("name"),
         "address": school.get("address"),
         "zone": school.get("zone"),
+        "homeward": state.homeward,
     }
 
 
@@ -70,7 +71,8 @@ CHILD_SENSORS: tuple[ChildSensorDescription, ...] = (
         key="current_lesson",
         translation_key="current_lesson",
         value_fn=lambda s: s.current.subject if s.current else None,
-        attrs_fn=lambda s: _lesson_attrs(s.current) | {"free_day": s.free},
+        attrs_fn=lambda s: _lesson_attrs(s.current)
+        | {"free_day": s.free, "changed_today": s.changed_today},
     ),
     ChildSensorDescription(
         key="next_lesson",

@@ -34,6 +34,8 @@ class ChildState:
     name: str
     school: dict[str, Any] | None
     free: bool
+    changed_today: bool
+    homeward: str
     lessons: list[Lesson]
     span: tuple[datetime, datetime] | None
     current: Lesson | None
@@ -70,9 +72,13 @@ class SchoolPlannerCoordinator(DataUpdateCoordinator[PlannerData]):
         entries = []
         for child_id, child in self.store.data["children"].items():
             entity = child.get("holiday_entity")
-            free = bool(entity) and self.hass.states.is_state(entity, "on")
+            overrides = child.get("overrides", {})
+            override_today = overrides.get(today.isoformat())
+            free = (bool(entity) and self.hass.states.is_state(entity, "on")) or bool(
+                override_today and override_today.get("off")
+            )
             timetable = child.get("timetable", {})
-            lessons = [] if free else lessons_on(timetable, today)
+            lessons = [] if free else lessons_on(timetable, today, overrides)
             span = day_span(lessons, today)
             school = self.store.data["schools"].get(child.get("school_id") or "")
             data.children[child_id] = ChildState(
@@ -80,10 +86,12 @@ class SchoolPlannerCoordinator(DataUpdateCoordinator[PlannerData]):
                 name=child["name"],
                 school=school,
                 free=free,
+                changed_today=override_today is not None,
+                homeward=child.get("homeward", "pickup"),
                 lessons=lessons,
                 span=span,
                 current=current_lesson(lessons, now),
-                next=next_lesson(timetable, now, skip_today=free),
+                next=next_lesson(timetable, now, skip_today=free, overrides=overrides),
             )
             entries.append(
                 {"id": child_id, "name": child["name"], "span": span, "school": school}

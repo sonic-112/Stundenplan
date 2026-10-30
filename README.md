@@ -2,7 +2,7 @@
 
 Home-Assistant-Integration für Stundenpläne mehrerer Kinder – mit Dashboard-Karte, Vergleich der Schulzeiten und Abholübersicht.
 
-> Status: frühe Version (0.1.0).
+> Status: frühe Version (0.2.0).
 
 ## Installation über HACS
 
@@ -16,6 +16,8 @@ Die Dashboard-Karte wird von der Integration automatisch geladen, es ist keine R
 
 * **Einstellungen → Geräte & Dienste → School Planner → Konfigurieren**: Kinder, Schulen und Design anlegen.
 * **Stundenplan pflegen**: In der Karte den Tab **Bearbeiten** öffnen (nur Administratoren), oder per Dienst `school_planner.set_lessons`.
+* **Heimweg**: Pro Kind (wird abgeholt, Bus, geht allein). Der Tab **Abholung** erscheint nur, wenn mindestens ein Kind abgeholt wird. Seinen Namen kannst du unter **Konfigurieren → Design** ändern (z. B. „Schulende“).
+* **Vertretung und Ausfall**: In der Tagesansicht über das Stift-Symbol (nur Administratoren). Du wählst, ob die Änderung **nur an diesem Datum** gilt oder den **Standardplan** ändert. „Ganzer Tag frei“ (Hitzefrei, Wandertag) gibt es für einzelne Daten. Änderte Tage sind mit „Geändert“ markiert, „Auf Standardplan zurücksetzen“ nimmt sie zurück. Schulbeginn, Schulende und Abholzeit rechnen mit der Änderung.
 * **Ferien / schulfrei**: Pro Kind kann eine Entität angegeben werden (Kalender, Binärsensor, Helfer). Ist sie `on`, gilt der Tag als schulfrei. So lässt sich eine beliebige Ferien-Integration anbinden.
 
 ## Karte
@@ -41,4 +43,6 @@ pip install -r requirements_test.txt
 pytest
 ```
 
-Geplant: A/B-Wochen, Ferien-Integration direkt, Fahrzeit zur Schule, Import aus Schulportalen.
+Dienste: `school_planner.set_lessons` (Standardplan eines Wochentags), `school_planner.set_day_override` und `school_planner.clear_day_override` (einzelnes Datum).
+
+Was als Nächstes kommt und was später geplant ist, steht in der [ROADMAP](ROADMAP.md).
