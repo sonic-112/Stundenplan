@@ -1,6 +1,20 @@
 /* School Planner card – no build step, no dependencies. */
-const SP_VERSION = "0.1.2-beta.2";
+const SP_VERSION = "0.1.2-beta.3";
 const SP_PALETTE = ["#4C8DF6", "#F0647D", "#34B67A", "#F5A524", "#9B6BF2", "#1FB5C9", "#E8743B", "#7C8DA5"];
+
+const SP_SUBJECT_COLORS = (() => {
+  const groups = [
+    ["#4C8DF6", "ma mathe mathematik"], ["#F0647D", "d de deutsch"], ["#34B67A", "en eng englisch"],
+    ["#F5A524", "sp spj spm sport"], ["#9B6BF2", "mu musik"], ["#E86EC3", "ku kunst"],
+    ["#5FBF5F", "bi biologie nawi"], ["#1FB5C9", "ch chemie"], ["#6C7BFF", "ph physik"],
+    ["#C9A227", "ge geschichte gg geographie geografie erdkunde gk"], ["#8C97AB", "eth et ethik re rel religion"],
+    ["#2DB5A5", "if info informatik"], ["#D9A441", "hsk hsu sachkunde sachunterricht"], ["#B07A52", "wrt wtr"],
+    ["#7C8DA5", "sg/we sg we werken"], ["#6B7280", "hort betreuung ag"], ["#E8743B", "fr französisch la latein sp2"],
+  ];
+  const map = {};
+  for (const [color, names] of groups) for (const n of names.split(" ")) map[n] = color;
+  return map;
+})();
 
 const SP_I18N = {
   de: {
@@ -24,6 +38,7 @@ const SP_I18N = {
     changed: "Geändert", changeDay: "Tag ändern", scopeDay: "Nur am {date}", scopeStandard: "Standardplan ändern ({day})",
     offDay: "Ganzer Tag frei", revert: "Auf Standardplan zurücksetzen", scope: "Gilt für", dayHint: "Wechsel des Geltungsbereichs lädt die Stunden neu; nicht gespeicherte Eingaben gehen verloren.",
     homeward: "Heimweg", homewardOpts: { pickup: "Wird abgeholt", bus: "Bus", alone: "Geht allein / zu Fuß" }, pickupLabel: "Name des Abholung-Tabs", sidebar: "In der Seitenleiste anzeigen",
+    lessonStyle: "Farbstil der Stunden", styles: { tinted: "Getönt", solid: "Vollfarbe", border: "Rand" },
   },
   en: {
     title: "School Planner", all: "All", day: "Day", week: "Week", compare: "Compare", pickup: "Pickup",
@@ -46,6 +61,7 @@ const SP_I18N = {
     changed: "Changed", changeDay: "Change day", scopeDay: "Only on {date}", scopeStandard: "Change regular timetable ({day})",
     offDay: "Whole day off", revert: "Revert to regular timetable", scope: "Applies to", dayHint: "Switching the scope reloads the lessons; unsaved input is lost.",
     homeward: "Way home", homewardOpts: { pickup: "Picked up", bus: "Bus", alone: "Goes alone / on foot" }, pickupLabel: "Name of the pickup tab", sidebar: "Show in the sidebar",
+    lessonStyle: "Lesson colour style", styles: { tinted: "Tinted", solid: "Solid colour", border: "Border" },
   },
 };
 
@@ -56,7 +72,10 @@ const spWeekday = (d) => (d.getDay() + 6) % 7;
 const spSameDay = (a, b) => a.toDateString() === b.toDateString();
 const spYmd = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 const spHash = (s) => [...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7);
-const spSubjectColor = (l) => l.color || SP_PALETTE[spHash(l.subject.toLowerCase()) % SP_PALETTE.length];
+const spSubjectColor = (l) => {
+  const key = l.subject.toLowerCase().replace(/\s+/g, "");
+  return l.color || SP_SUBJECT_COLORS[key] || SP_PALETTE[spHash(key) % SP_PALETTE.length];
+};
 
 const SP_CSS = `
 :host { display:block; --sp-radius:14px; --sp-bg:var(--ha-card-background, var(--card-background-color, #fff));
@@ -95,7 +114,20 @@ ha-card { display:block; background:var(--sp-bg); color:var(--sp-text); border-r
 .lesson .t { font-size:.78rem; color:var(--sp-muted); line-height:1.25; font-variant-numeric:tabular-nums; }
 .lesson .s { font-weight:600; }
 .lesson .m { font-size:.78rem; color:var(--sp-muted); }
-.lesson.now { outline:2px solid var(--c); }
+.lesson.now { outline:2px solid color-mix(in srgb, var(--c) 65%, #fff); outline-offset:1px; }
+:host([data-style="tinted"]) .lesson { background:color-mix(in srgb, var(--c) 30%, var(--sp-bg)); box-shadow:none; border-left:5px solid var(--c); }
+:host([data-style="solid"]) .lesson { background:color-mix(in srgb, var(--c) 70%, #000); box-shadow:none; border-left:0; }
+:host([data-style="solid"]) .lesson .s { color:#fff; font-size:1.05rem; font-weight:700; }
+:host([data-style="solid"]) .lesson .t, :host([data-style="solid"]) .lesson .m { color:rgba(255,255,255,.85); }
+:host([data-style="solid"]) .lesson .badge { background:#fff; color:#111; }
+.grid { display:grid; gap:6px; align-items:stretch; overflow-x:auto; padding-bottom:4px; }
+.grid .h { text-align:center; font-size:.8rem; font-weight:600; color:var(--sp-muted); padding:4px 0; }
+.grid .h.today { color:var(--sp-accent); }
+.grid .tm { font-size:.7rem; color:var(--sp-muted); line-height:1.25; align-self:center; font-variant-numeric:tabular-nums; }
+.grid .sep { grid-column:1 / -1; text-align:center; font-size:.68rem; color:var(--sp-muted); margin:-2px 0; }
+.grid .lesson.cell { grid-template-columns:1fr; gap:1px; padding:8px 9px; margin:0; min-height:48px; align-content:center; }
+.grid .lesson.cell .badge { top:4px; right:4px; font-size:.58rem; padding:0 5px; }
+.grid .none { border-radius:calc(var(--sp-radius) - 4px); background:var(--sp-surface); opacity:.35; min-height:48px; }
 .lesson .badge { position:absolute; top:8px; right:8px; font-size:.65rem; background:var(--c); color:#fff; padding:1px 7px; border-radius:99px; }
 .pause { text-align:center; color:var(--sp-muted); font-size:.72rem; margin:-2px 0 4px; }
 .empty { color:var(--sp-muted); padding:10px 0; font-size:.9rem; }
@@ -237,6 +269,7 @@ class SchoolPlannerCard extends HTMLElement {
     if (!this._config) return;
     const t = this._t;
     this.setAttribute("data-theme", this._theme);
+    this.setAttribute("data-style", this._data?.settings?.lesson_style || "tinted");
     const accent = this._data?.settings?.accent;
     this.style.setProperty("--sp-accent", accent || "");
     if (!accent) this.style.removeProperty("--sp-accent");
@@ -332,17 +365,36 @@ class SchoolPlannerCard extends HTMLElement {
 
   _renderWeek() {
     const t = this._t;
-    const child = this._selected()[0] || this._children[0];
     const todayIdx = spWeekday(new Date());
+    const nowM = this._nowMin();
     const monday = new Date(); monday.setHours(12, 0, 0, 0); monday.setDate(monday.getDate() - todayIdx);
     const dateOf = (i) => { const d = new Date(monday); d.setDate(d.getDate() + i); return d; };
-    const days = [0, 1, 2, 3, 4].concat([5, 6].filter((i) => this._lessons(child, dateOf(i)).length));
-    const cols = days.map((i) => {
-      const ls = this._lessons(child, dateOf(i));
-      const changed = !!this._override(child, dateOf(i));
-      return `<div class="${i === todayIdx ? "today" : ""}"><h4>${t.daysShort[i]}${changed ? ` <span class="chg" title="${spEsc(t.changed)}">●</span>` : ""}</h4>${ls.map((l) => this._lessonHtml(l, false)).join("") || `<div class="empty">–</div>`}</div>`;
+    return this._selected().map((child) => {
+      const days = [0, 1, 2, 3, 4].concat([5, 6].filter((i) => this._lessons(child, dateOf(i)).length));
+      const perDay = days.map((i) => this._lessons(child, dateOf(i)));
+      const slots = [...new Map(perDay.flat().map((l) => [`${l.start}-${l.end}`, { start: l.start, end: l.end }])).values()]
+        .sort((a, b) => spMin(a.start) - spMin(b.start));
+      const head = days.map((i) => {
+        const changed = !!this._override(child, dateOf(i));
+        return `<div class="h ${i === todayIdx ? "today" : ""}">${t.daysShort[i]}${changed ? ` <span class="chg" title="${spEsc(t.changed)}">●</span>` : ""}</div>`;
+      }).join("");
+      let prevEnd = null;
+      const rows = slots.map((slot, n) => {
+        const gap = prevEnd !== null ? spMin(slot.start) - prevEnd : 0;
+        prevEnd = spMin(slot.end);
+        const cells = days.map((i, di) => {
+          const l = perDay[di].find((x) => x.start === slot.start && x.end === slot.end);
+          if (!l) return `<div class="none"></div>`;
+          const isNow = i === todayIdx && nowM >= spMin(l.start) && nowM < spMin(l.end);
+          return `<div class="lesson cell ${isNow ? "now" : ""}" style="--c:${spEsc(spSubjectColor(l))}"><div class="s">${spEsc(l.subject)}</div>${l.room ? `<div class="m">${spEsc(l.room)}</div>` : ""}${isNow ? `<span class="badge">${t.now}</span>` : ""}</div>`;
+        }).join("");
+        return (gap >= 20 ? `<div class="sep">${t.pause} · ${gap} ${t.min}</div>` : "")
+          + `<div class="tm">${spEsc(slot.start)}<br>${spEsc(slot.end)}</div>${cells}`;
+      }).join("");
+      const school = this._school(child);
+      return `<div class="sub" style="margin:4px 0 8px"><b style="color:var(--sp-text)">${spEsc(child.name)}</b>${school ? " · " + spEsc(school.name) : ""}</div>
+        <div class="grid" style="grid-template-columns:3.4rem repeat(${days.length}, minmax(76px, 1fr)); margin-bottom:16px"><div></div>${head}${rows}</div>`;
     }).join("");
-    return `<div class="sub" style="margin-bottom:8px">${spEsc(child.name)}${this._school(child) ? " · " + spEsc(this._school(child).name) : ""}</div><div class="week">${cols}</div>`;
   }
 
   _renderCompare() {
@@ -422,6 +474,7 @@ class SchoolPlannerCard extends HTMLElement {
       const s = this._data.settings;
       inner = `<div class="form"><label>${t.theme}<select data-f="theme">${["clear", "vivid", "night"].map((k) => `<option value="${k}" ${s.theme === k ? "selected" : ""}>${t.themes[k]}</option>`).join("")}</select></label>
         <label>${t.accent}<input type="color" data-f="accent" value="${spEsc(s.accent || "#4c8df6")}"></label>
+        <label>${t.lessonStyle}<select data-f="lesson_style">${["tinted", "solid", "border"].map((k) => `<option value="${k}" ${(s.lesson_style || "tinted") === k ? "selected" : ""}>${t.styles[k]}</option>`).join("")}</select></label>
         <label>${t.pickupLabel}<input data-f="pickup_label" maxlength="30" value="${spEsc(s.pickup_label || t.pickup)}"></label>
         <label style="display:flex;gap:8px;align-items:center;color:var(--sp-text)"><input type="checkbox" data-f="sidebar" ${s.sidebar === false ? "" : "checked"}>${t.sidebar}</label></div>`;
     }
@@ -498,7 +551,7 @@ class SchoolPlannerCard extends HTMLElement {
       if (e.type === "change") this._ws({ type: "school_planner/save_settings", sidebar: el.checked });
       return;
     }
-    if (["theme", "accent", "pickup_label"].includes(el.dataset.f)) {
+    if (["theme", "accent", "pickup_label", "lesson_style"].includes(el.dataset.f)) {
       if (e.type === "change" && (el.dataset.f !== "pickup_label" || el.value.trim())) this._ws({ type: "school_planner/save_settings", [el.dataset.f]: el.value.trim() });
       return;
     }

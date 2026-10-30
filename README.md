@@ -8,7 +8,7 @@
 
 Home-Assistant-Integration für Stundenpläne mehrerer Kinder – mit Dashboard-Karte, Vergleich der Schulzeiten und Abholübersicht.
 
-> Status: frühe Version (0.1.2-beta.2, Beta).
+> Status: frühe Version (0.1.2-beta.3, Beta).
 
 ## Installation über HACS
 
@@ -31,6 +31,10 @@ Die Integration legt in der Seitenleiste den Eintrag **Schulplaner** an. Er zeig
 * **Heimweg**: Pro Kind (wird abgeholt, Bus, geht allein). Der Tab **Abholung** erscheint nur, wenn mindestens ein Kind abgeholt wird. Seinen Namen kannst du unter **Konfigurieren → Design** ändern (z. B. „Schulende“).
 * **Vertretung und Ausfall**: In der Tagesansicht über das Stift-Symbol (nur Administratoren). Du wählst, ob die Änderung **nur an diesem Datum** gilt oder den **Standardplan** ändert. „Ganzer Tag frei“ (Hitzefrei, Wandertag) gibt es für einzelne Daten. Änderte Tage sind mit „Geändert“ markiert, „Auf Standardplan zurücksetzen“ nimmt sie zurück. Schulbeginn, Schulende und Abholzeit rechnen mit der Änderung.
 * **Ferien / schulfrei**: Pro Kind kann eine Entität angegeben werden (Kalender, Binärsensor, Helfer). Ist sie `on`, gilt der Tag als schulfrei. So lässt sich eine beliebige Ferien-Integration anbinden.
+
+## Aussehen
+
+Unter **Konfigurieren → Design** (oder in der Karte unter Bearbeiten → Design) wählst du den **Farbstil der Stunden**: *Getönt* (Standard), *Vollfarbe* oder *Rand*. Jedes Fach hat eine feste Farbe, damit dasselbe Fach bei allen Kindern gleich aussieht. Die laufende Stunde ist mit „Jetzt“ markiert. Die Wochenansicht zeigt jedes Kind als Raster (Zeilen sind die Stunden, Spalten die Tage); Tage mit einer Änderung tragen einen Punkt.
 
 ## Karte
 

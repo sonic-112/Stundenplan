@@ -15,6 +15,7 @@ from homeassistant.util import dt as dt_util
 from .const import (
     DEFAULT_COLORS,
     DEFAULT_HOMEWARD,
+    DEFAULT_LESSON_STYLE,
     DEFAULT_PICKUP_LABEL,
     DEFAULT_THEME,
     EVENT_UPDATED,
@@ -31,6 +32,7 @@ def _empty() -> dict[str, Any]:
             "accent": None,
             "pickup_label": DEFAULT_PICKUP_LABEL,
             "sidebar": True,
+            "lesson_style": DEFAULT_LESSON_STYLE,
         },
         "schools": {},
         "children": {},

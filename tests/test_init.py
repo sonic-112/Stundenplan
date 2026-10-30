@@ -217,3 +217,16 @@ async def test_sidebar_panel_follows_setting_and_unload(hass: HomeAssistant) -> 
     assert await hass.config_entries.async_unload(entry.entry_id)
     await hass.async_block_till_done()
     assert "school-planner" not in hass.data[DATA_PANELS]
+
+
+async def test_lesson_style_setting(hass: HomeAssistant, hass_ws_client) -> None:
+    entry = await _setup(hass)
+    store = entry.runtime_data.store
+    assert store.data["settings"]["lesson_style"] == "tinted"
+    client = await hass_ws_client(hass)
+    await client.send_json({"id": 1, "type": f"{DOMAIN}/save_settings", "lesson_style": "solid"})
+    assert (await client.receive_json())["success"]
+    assert store.data["settings"]["lesson_style"] == "solid"
+    await client.send_json({"id": 2, "type": f"{DOMAIN}/save_settings", "lesson_style": "neon"})
+    assert not (await client.receive_json())["success"]
+    assert store.data["settings"]["lesson_style"] == "solid"

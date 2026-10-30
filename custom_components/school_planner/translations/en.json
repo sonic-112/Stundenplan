@@ -90,7 +90,8 @@
           "theme": "Theme",
           "accent": "Accent color (optional)",
           "pickup_label": "Name of the pickup tab",
-          "sidebar": "Show in the sidebar"
+          "sidebar": "Show in the sidebar",
+          "lesson_style": "Lesson colour style"
         }
       }
     },
@@ -151,6 +152,13 @@
         "pickup": "Picked up",
         "bus": "Bus",
         "alone": "Goes alone / on foot"
+      }
+    },
+    "lesson_style": {
+      "options": {
+        "tinted": "Tinted",
+        "solid": "Solid colour",
+        "border": "Border"
       }
     }
   },

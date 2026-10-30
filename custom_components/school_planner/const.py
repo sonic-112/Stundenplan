@@ -15,6 +15,9 @@ PANEL_ELEMENT = "school-planner-panel"
 
 THEMES = ["clear", "vivid", "night"]
 
+LESSON_STYLES = ["tinted", "solid", "border"]
+DEFAULT_LESSON_STYLE = "tinted"
+
 HOMEWARD = ["pickup", "bus", "alone"]
 DEFAULT_HOMEWARD = "pickup"
 DEFAULT_PICKUP_LABEL = "Abholung"

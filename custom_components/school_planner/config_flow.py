@@ -10,7 +10,15 @@ from homeassistant.config_entries import ConfigFlow, ConfigFlowResult, OptionsFl
 from homeassistant.core import callback
 from homeassistant.helpers import selector
 
-from .const import DEFAULT_HOMEWARD, DEFAULT_PICKUP_LABEL, DOMAIN, HOMEWARD, THEMES
+from .const import (
+    DEFAULT_HOMEWARD,
+    DEFAULT_LESSON_STYLE,
+    DEFAULT_PICKUP_LABEL,
+    DOMAIN,
+    HOMEWARD,
+    LESSON_STYLES,
+    THEMES,
+)
 
 
 def _hex(rgb: list[int]) -> str:
@@ -228,6 +236,7 @@ class SchoolPlannerOptionsFlow(OptionsFlow):
                     "accent": _hex(accent) if accent else None,
                     "pickup_label": user_input["pickup_label"].strip() or DEFAULT_PICKUP_LABEL,
                     "sidebar": user_input["sidebar"],
+                    "lesson_style": user_input["lesson_style"],
                 }
             )
             return self._finish()
@@ -235,6 +244,7 @@ class SchoolPlannerOptionsFlow(OptionsFlow):
             "theme": settings["theme"],
             "pickup_label": settings.get("pickup_label", DEFAULT_PICKUP_LABEL),
             "sidebar": settings.get("sidebar", True),
+            "lesson_style": settings.get("lesson_style", DEFAULT_LESSON_STYLE),
         }
         if settings.get("accent"):
             suggested["accent"] = _rgb(settings["accent"])
@@ -249,6 +259,13 @@ class SchoolPlannerOptionsFlow(OptionsFlow):
                 ),
                 vol.Optional("accent"): selector.ColorRGBSelector(),
                 vol.Required("pickup_label"): str,
+                vol.Required("lesson_style"): selector.SelectSelector(
+                    selector.SelectSelectorConfig(
+                        options=LESSON_STYLES,
+                        translation_key="lesson_style",
+                        mode=selector.SelectSelectorMode.LIST,
+                    )
+                ),
                 vol.Required("sidebar"): selector.BooleanSelector(),
             }
         )

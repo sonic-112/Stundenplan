@@ -90,7 +90,8 @@
           "theme": "Design",
           "accent": "Akzentfarbe (optional)",
           "pickup_label": "Name des Abholung-Tabs",
-          "sidebar": "In der Seitenleiste anzeigen"
+          "sidebar": "In der Seitenleiste anzeigen",
+          "lesson_style": "Farbstil der Stunden"
         }
       }
     },
@@ -151,6 +152,13 @@
         "pickup": "Wird abgeholt",
         "bus": "Bus",
         "alone": "Geht allein / zu Fuß"
+      }
+    },
+    "lesson_style": {
+      "options": {
+        "tinted": "Getönt",
+        "solid": "Vollfarbe",
+        "border": "Rand"
       }
     }
   },

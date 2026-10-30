@@ -9,7 +9,7 @@ import voluptuous as vol
 
 from homeassistant.helpers import config_validation as cv
 
-from .const import HOMEWARD, THEMES
+from .const import HOMEWARD, LESSON_STYLES, THEMES
 
 TIME_RE = r"^([01]\d|2[0-3]):[0-5]\d$"
 COLOR_RE = r"^#[0-9a-fA-F]{6}$"
@@ -75,4 +75,5 @@ SETTINGS_FIELDS = {
     vol.Optional("accent"): vol.Any(None, vol.Match(COLOR_RE)),
     vol.Optional("pickup_label"): vol.All(cv.string, vol.Length(min=1, max=30)),
     vol.Optional("sidebar"): cv.boolean,
+    vol.Optional("lesson_style"): vol.In(LESSON_STYLES),
 }
