@@ -1,0 +1,166 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "School Planner",
+        "description": "Set up School Planner. Children, schools and timetables are managed afterwards via Configure and the dashboard card."
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "School Planner is already set up."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "School Planner",
+        "menu_options": {
+          "add_child": "Add child",
+          "edit_child": "Edit child",
+          "remove_child": "Remove child",
+          "add_school": "Add school",
+          "edit_school": "Edit school",
+          "remove_school": "Remove school",
+          "settings": "Design"
+        }
+      },
+      "add_child": {
+        "title": "Add child",
+        "data": {
+          "name": "Name",
+          "color": "Color",
+          "school_id": "School",
+          "holiday_entity": "Free-day entity (on = no school)"
+        }
+      },
+      "edit_child": {
+        "title": "Edit child",
+        "data": {
+          "target": "Child"
+        }
+      },
+      "edit_child_details": {
+        "title": "Edit child",
+        "data": {
+          "name": "Name",
+          "color": "Color",
+          "school_id": "School",
+          "holiday_entity": "Free-day entity (on = no school)"
+        }
+      },
+      "remove_child": {
+        "title": "Remove child",
+        "data": {
+          "target": "Child"
+        }
+      },
+      "add_school": {
+        "title": "Add school",
+        "data": {
+          "name": "Name",
+          "address": "Address",
+          "zone": "Zone (for navigation)"
+        }
+      },
+      "edit_school": {
+        "title": "Edit school",
+        "data": {
+          "target": "School"
+        }
+      },
+      "edit_school_details": {
+        "title": "Edit school",
+        "data": {
+          "name": "Name",
+          "address": "Address",
+          "zone": "Zone (for navigation)"
+        }
+      },
+      "remove_school": {
+        "title": "Remove school",
+        "data": {
+          "target": "School"
+        }
+      },
+      "settings": {
+        "title": "Design",
+        "data": {
+          "theme": "Theme",
+          "accent": "Accent color (optional)"
+        }
+      }
+    },
+    "abort": {
+      "no_children": "No children yet.",
+      "no_schools": "No schools yet."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "current_lesson": {
+        "name": "Current lesson"
+      },
+      "next_lesson": {
+        "name": "Next lesson"
+      },
+      "school_start": {
+        "name": "School start"
+      },
+      "school_end": {
+        "name": "School end"
+      },
+      "pickup": {
+        "name": "Pickup time"
+      },
+      "earliest_start": {
+        "name": "Earliest start"
+      },
+      "latest_end": {
+        "name": "Latest end"
+      },
+      "first_done": {
+        "name": "Done first"
+      }
+    }
+  },
+  "selector": {
+    "theme": {
+      "options": {
+        "clear": "Clear",
+        "vivid": "Vivid",
+        "night": "Night"
+      }
+    },
+    "weekday": {
+      "options": {
+        "mon": "Monday",
+        "tue": "Tuesday",
+        "wed": "Wednesday",
+        "thu": "Thursday",
+        "fri": "Friday",
+        "sat": "Saturday",
+        "sun": "Sunday"
+      }
+    }
+  },
+  "services": {
+    "set_lessons": {
+      "name": "Set lessons",
+      "description": "Replace all lessons of one weekday for a child.",
+      "fields": {
+        "child": {
+          "name": "Child",
+          "description": "Name of the child."
+        },
+        "weekday": {
+          "name": "Weekday",
+          "description": "Weekday to replace."
+        },
+        "lessons": {
+          "name": "Lessons",
+          "description": "List of lessons with start, end, subject and optional room, teacher and color."
+        }
+      }
+    }
+  }
+}

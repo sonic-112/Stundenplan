@@ -1,0 +1,166 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Schulplaner",
+        "description": "Schulplaner einrichten. Kinder, Schulen und Stundenpläne pflegst du danach über Konfigurieren und die Dashboard-Karte."
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Der Schulplaner ist bereits eingerichtet."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Schulplaner",
+        "menu_options": {
+          "add_child": "Kind hinzufügen",
+          "edit_child": "Kind bearbeiten",
+          "remove_child": "Kind entfernen",
+          "add_school": "Schule hinzufügen",
+          "edit_school": "Schule bearbeiten",
+          "remove_school": "Schule entfernen",
+          "settings": "Design"
+        }
+      },
+      "add_child": {
+        "title": "Kind hinzufügen",
+        "data": {
+          "name": "Name",
+          "color": "Farbe",
+          "school_id": "Schule",
+          "holiday_entity": "Frei-Entität (an = schulfrei)"
+        }
+      },
+      "edit_child": {
+        "title": "Kind bearbeiten",
+        "data": {
+          "target": "Kind"
+        }
+      },
+      "edit_child_details": {
+        "title": "Kind bearbeiten",
+        "data": {
+          "name": "Name",
+          "color": "Farbe",
+          "school_id": "Schule",
+          "holiday_entity": "Frei-Entität (an = schulfrei)"
+        }
+      },
+      "remove_child": {
+        "title": "Kind entfernen",
+        "data": {
+          "target": "Kind"
+        }
+      },
+      "add_school": {
+        "title": "Schule hinzufügen",
+        "data": {
+          "name": "Name",
+          "address": "Adresse",
+          "zone": "Zone (für Navigation)"
+        }
+      },
+      "edit_school": {
+        "title": "Schule bearbeiten",
+        "data": {
+          "target": "Schule"
+        }
+      },
+      "edit_school_details": {
+        "title": "Schule bearbeiten",
+        "data": {
+          "name": "Name",
+          "address": "Adresse",
+          "zone": "Zone (für Navigation)"
+        }
+      },
+      "remove_school": {
+        "title": "Schule entfernen",
+        "data": {
+          "target": "Schule"
+        }
+      },
+      "settings": {
+        "title": "Design",
+        "data": {
+          "theme": "Design",
+          "accent": "Akzentfarbe (optional)"
+        }
+      }
+    },
+    "abort": {
+      "no_children": "Noch keine Kinder angelegt.",
+      "no_schools": "Noch keine Schulen angelegt."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "current_lesson": {
+        "name": "Aktuelle Stunde"
+      },
+      "next_lesson": {
+        "name": "Nächste Stunde"
+      },
+      "school_start": {
+        "name": "Schulbeginn"
+      },
+      "school_end": {
+        "name": "Schulende"
+      },
+      "pickup": {
+        "name": "Abholzeit"
+      },
+      "earliest_start": {
+        "name": "Frühester Beginn"
+      },
+      "latest_end": {
+        "name": "Spätestes Ende"
+      },
+      "first_done": {
+        "name": "Zuerst fertig"
+      }
+    }
+  },
+  "selector": {
+    "theme": {
+      "options": {
+        "clear": "Klar",
+        "vivid": "Bunt",
+        "night": "Nacht"
+      }
+    },
+    "weekday": {
+      "options": {
+        "mon": "Montag",
+        "tue": "Dienstag",
+        "wed": "Mittwoch",
+        "thu": "Donnerstag",
+        "fri": "Freitag",
+        "sat": "Samstag",
+        "sun": "Sonntag"
+      }
+    }
+  },
+  "services": {
+    "set_lessons": {
+      "name": "Stunden setzen",
+      "description": "Ersetzt alle Stunden eines Wochentags für ein Kind.",
+      "fields": {
+        "child": {
+          "name": "Kind",
+          "description": "Name des Kindes."
+        },
+        "weekday": {
+          "name": "Wochentag",
+          "description": "Zu ersetzender Wochentag."
+        },
+        "lessons": {
+          "name": "Stunden",
+          "description": "Liste von Stunden mit Start, Ende, Fach und optional Raum, Lehrer und Farbe."
+        }
+      }
+    }
+  }
+}

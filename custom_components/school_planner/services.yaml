@@ -1,0 +1,19 @@
+set_lessons:
+  fields:
+    child:
+      required: true
+      example: "Emma"
+      selector:
+        text:
+    weekday:
+      required: true
+      example: "mon"
+      selector:
+        select:
+          translation_key: weekday
+          options: [mon, tue, wed, thu, fri, sat, sun]
+    lessons:
+      required: true
+      example: '[{"start": "08:00", "end": "08:45", "subject": "Maths", "room": "A12"}]'
+      selector:
+        object:
