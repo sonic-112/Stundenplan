@@ -1,5 +1,5 @@
 /* School Planner card – no build step, no dependencies. */
-const SP_VERSION = "0.2.0";
+const SP_VERSION = "0.1.2-beta.1";
 const SP_PALETTE = ["#4C8DF6", "#F0647D", "#34B67A", "#F5A524", "#9B6BF2", "#1FB5C9", "#E8743B", "#7C8DA5"];
 
 const SP_I18N = {

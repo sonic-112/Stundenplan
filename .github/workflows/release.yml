@@ -1,0 +1,48 @@
+name: Release
+
+# Started by hand (Actions -> Release -> Run workflow) or through the API.
+# GitHub creates the tag together with the release, so no tag has to be pushed.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version without v, must match the manifest (e.g. 0.1.1 or 0.1.2-beta.1)"
+        required: true
+        type: string
+      ref:
+        description: "Branch or commit to release"
+        required: true
+        default: main
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Version must match the manifest
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          manifest=$(python3 -c "import json; print(json.load(open('custom_components/school_planner/manifest.json'))['version'])")
+          if [ "$manifest" != "$VERSION" ]; then
+            echo "Requested version $VERSION does not match manifest version $manifest"
+            exit 1
+          fi
+
+      - name: Create release (a version with a hyphen is a pre-release)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          flags="--generate-notes"
+          case "$VERSION" in
+            *-*) flags="$flags --prerelease" ;;
+          esac
+          gh release create "v$VERSION" --title "v$VERSION" --target "$(git rev-parse HEAD)" $flags

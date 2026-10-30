@@ -8,7 +8,7 @@
 
 Home-Assistant-Integration für Stundenpläne mehrerer Kinder – mit Dashboard-Karte, Vergleich der Schulzeiten und Abholübersicht.
 
-> Status: frühe Version (0.2.0).
+> Status: frühe Version (0.1.2-beta.1, Beta).
 
 ## Installation über HACS
 
@@ -17,6 +17,10 @@ Home-Assistant-Integration für Stundenpläne mehrerer Kinder – mit Dashboard-
 3. **Einstellungen → Geräte & Dienste → Integration hinzufügen → School Planner**.
 
 Die Dashboard-Karte wird von der Integration automatisch geladen, es ist keine Ressource einzutragen.
+
+## Stabil und Beta
+
+HACS bietet standardmäßig die neueste **stabile** Version an. Neues wird zuerst als **Beta** veröffentlicht (auf GitHub als Pre-release markiert, die Version enthält `-beta`). Wer früh testen will, öffnet das Repository in HACS, wählt **Neu herunterladen** und schaltet **Beta-Versionen anzeigen** ein (die Bezeichnung kann je nach HACS-Version abweichen). Nach dem Test wird aus einer Beta die nächste stabile Version. Die Versionsnummern wachsen in kleinen Schritten (0.1.x).
 
 ## Einrichten
 

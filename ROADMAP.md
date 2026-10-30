@@ -1,6 +1,6 @@
 # Roadmap
 
-## In Arbeit (0.2.x)
+## In Arbeit (0.1.x)
 
 - **Einrichtungsassistent** bei der ersten Einrichtung: Schule, Kind, Heimweg, Ferien-Entität. Alle Angaben macht der Nutzer selbst oder wählt sie aus seinem Home Assistant (Zonen, Entitäten).
 - **Mitbringen**: Haken pro Stunde mit Freitext (Sportsachen, Instrument). Die Karte zeigt, was an einem Tag insgesamt mitzubringen ist.
