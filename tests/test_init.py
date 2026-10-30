@@ -153,3 +153,32 @@ async def test_websocket_override_and_child_defaults(hass: HomeAssistant, hass_w
         {"id": 6, "type": f"{DOMAIN}/save_override", "child_id": child_id, "date": "kein-datum"}
     )
     assert not (await client.receive_json())["success"]
+
+
+async def test_existing_data_gets_new_defaults(hass: HomeAssistant, hass_storage) -> None:
+    """Data written by version 0.1.x has no homeward, overrides or pickup label."""
+    hass_storage["school_planner"] = {
+        "version": 1,
+        "minor_version": 1,
+        "key": "school_planner",
+        "data": {
+            "settings": {"theme": "night", "accent": None},
+            "schools": {"s1": {"name": "School", "address": "", "zone": None}},
+            "children": {
+                "c1": {
+                    "name": "Emma",
+                    "color": "#4C8DF6",
+                    "school_id": "s1",
+                    "holiday_entity": None,
+                    "timetable": {"0": [{"start": "08:00", "end": "08:45", "subject": "Art"}]},
+                }
+            },
+        },
+    }
+    entry = await _setup(hass)
+    data = entry.runtime_data.store.data
+    assert data["children"]["c1"]["homeward"] == "pickup"
+    assert data["children"]["c1"]["overrides"] == {}
+    assert data["settings"]["pickup_label"] == "Abholung"
+    assert data["settings"]["theme"] == "night"
+    assert data["children"]["c1"]["timetable"]["0"][0]["subject"] == "Art"
