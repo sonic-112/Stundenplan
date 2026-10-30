@@ -182,3 +182,16 @@ async def test_existing_data_gets_new_defaults(hass: HomeAssistant, hass_storage
     assert data["settings"]["pickup_label"] == "Abholung"
     assert data["settings"]["theme"] == "night"
     assert data["children"]["c1"]["timetable"]["0"][0]["subject"] == "Art"
+
+
+def test_services_yaml_matches_registered_services() -> None:
+    """hassfest rejects non-string keys such as an unquoted ``off`` (YAML reads it as False)."""
+    import pathlib
+
+    import yaml
+
+    path = pathlib.Path(__file__).parent.parent / "custom_components" / "school_planner" / "services.yaml"
+    described = yaml.safe_load(path.read_text())
+    assert set(described) == {"set_lessons", "set_day_override", "clear_day_override"}
+    for service, body in described.items():
+        assert all(isinstance(key, str) for key in body["fields"]), service

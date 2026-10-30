@@ -30,7 +30,7 @@ set_day_override:
       example: "2026-11-05"
       selector:
         date:
-    off:
+    "off":
       required: false
       default: false
       selector:
