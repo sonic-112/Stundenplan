@@ -1,5 +1,11 @@
 # School Planner (Schulplaner)
 
+[![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://hacs.xyz)
+[![Validate](https://github.com/sonic-112/stundenplan/actions/workflows/validate.yml/badge.svg)](https://github.com/sonic-112/stundenplan/actions/workflows/validate.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+
+[![Repository in HACS öffnen](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=sonic-112&repository=stundenplan&category=integration)
+
 Home-Assistant-Integration für Stundenpläne mehrerer Kinder – mit Dashboard-Karte, Vergleich der Schulzeiten und Abholübersicht.
 
 > Status: frühe Version (0.2.0).
@@ -46,3 +52,7 @@ pytest
 Dienste: `school_planner.set_lessons` (Standardplan eines Wochentags), `school_planner.set_day_override` und `school_planner.clear_day_override` (einzelnes Datum).
 
 Was als Nächstes kommt und was später geplant ist, steht in der [ROADMAP](ROADMAP.md).
+
+## Lizenz
+
+MIT, siehe [LICENSE](LICENSE).
