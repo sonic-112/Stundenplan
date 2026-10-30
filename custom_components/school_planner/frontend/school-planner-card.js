@@ -1,5 +1,5 @@
 /* School Planner card – no build step, no dependencies. */
-const SP_VERSION = "0.1.2-beta.3";
+const SP_VERSION = "0.1.2-beta.4";
 const SP_PALETTE = ["#4C8DF6", "#F0647D", "#34B67A", "#F5A524", "#9B6BF2", "#1FB5C9", "#E8743B", "#7C8DA5"];
 
 const SP_SUBJECT_COLORS = (() => {
@@ -38,6 +38,8 @@ const SP_I18N = {
     changed: "Geändert", changeDay: "Tag ändern", scopeDay: "Nur am {date}", scopeStandard: "Standardplan ändern ({day})",
     offDay: "Ganzer Tag frei", revert: "Auf Standardplan zurücksetzen", scope: "Gilt für", dayHint: "Wechsel des Geltungsbereichs lädt die Stunden neu; nicht gespeicherte Eingaben gehen verloren.",
     homeward: "Heimweg", homewardOpts: { pickup: "Wird abgeholt", bus: "Bus", alone: "Geht allein / zu Fuß" }, pickupLabel: "Name des Abholung-Tabs", sidebar: "In der Seitenleiste anzeigen",
+    subjects: "Fächer", abbr: "Kürzel", fullName: "Klartext", resetColor: "Zurücksetzen", newSubject: "Fach hinzufügen",
+    subjectsHint: "Farbe und Klartext für die Kürzel aus deinen Plänen. Die Einstellung gilt für alle Kinder. Ohne eigene Farbe gilt die Standardfarbe.",
     lessonStyle: "Farbstil der Stunden", styles: { tinted: "Getönt", solid: "Vollfarbe", border: "Rand" },
   },
   en: {
@@ -61,6 +63,8 @@ const SP_I18N = {
     changed: "Changed", changeDay: "Change day", scopeDay: "Only on {date}", scopeStandard: "Change regular timetable ({day})",
     offDay: "Whole day off", revert: "Revert to regular timetable", scope: "Applies to", dayHint: "Switching the scope reloads the lessons; unsaved input is lost.",
     homeward: "Way home", homewardOpts: { pickup: "Picked up", bus: "Bus", alone: "Goes alone / on foot" }, pickupLabel: "Name of the pickup tab", sidebar: "Show in the sidebar",
+    subjects: "Subjects", abbr: "Abbreviation", fullName: "Full name", resetColor: "Reset", newSubject: "Add subject",
+    subjectsHint: "Colour and full name for the abbreviations in your timetables. This applies to all children. Without a custom colour the default colour is used.",
     lessonStyle: "Lesson colour style", styles: { tinted: "Tinted", solid: "Solid colour", border: "Border" },
   },
 };
@@ -72,9 +76,11 @@ const spWeekday = (d) => (d.getDay() + 6) % 7;
 const spSameDay = (a, b) => a.toDateString() === b.toDateString();
 const spYmd = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 const spHash = (s) => [...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7);
-const spSubjectColor = (l) => {
-  const key = l.subject.toLowerCase().replace(/\s+/g, "");
-  return l.color || SP_SUBJECT_COLORS[key] || SP_PALETTE[spHash(key) % SP_PALETTE.length];
+const spSubjectKey = (s) => String(s).toLowerCase().replace(/\s+/g, "");
+// Order: colour set on the lesson, colour the user chose for the subject, built-in default, hashed fallback.
+const spSubjectColor = (l, subjects) => {
+  const key = spSubjectKey(l.subject);
+  return l.color || subjects?.[key]?.color || SP_SUBJECT_COLORS[key] || SP_PALETTE[spHash(key) % SP_PALETTE.length];
 };
 
 const SP_CSS = `
@@ -162,6 +168,11 @@ ha-card { display:block; background:var(--sp-bg); color:var(--sp-text); border-r
 @media (max-width:640px) { .lrow { grid-template-columns:1fr 1fr; } .lrow .wide { grid-column:1 / -1; } }
 .list-item { display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--sp-border); }
 .list-item .grow { flex:1; }
+.srow { display:grid; grid-template-columns:5rem 1fr 3.2rem auto; gap:8px; align-items:center; padding:6px 0; border-bottom:1px solid var(--sp-border); }
+.srow input { font:inherit; color:var(--sp-text); background:var(--sp-surface); border:1px solid var(--sp-border); border-radius:8px; padding:6px 8px; min-width:0; }
+.srow input[type=color] { padding:2px; height:34px; width:3.2rem; }
+.srow .abbr { font-weight:700; }
+@media (max-width:520px) { .srow { grid-template-columns:4rem 1fr 3.2rem; } .srow .btn { grid-column:2 / -1; } }
 .chg { color:var(--sp-accent); font-weight:600; }
 .btn.icon { padding:2px 8px; margin-left:auto; }
 .scope { display:grid; gap:6px; }
@@ -217,7 +228,7 @@ class SchoolPlannerCard extends HTMLElement {
   _tickRender(force) {
     // Re-render only when the visible minute changes, and never while editing a draft.
     const key = new Date().toISOString().slice(0, 16);
-    if (this._edit.draft) return;
+    if (this._edit.draft || this._view === "edit") return;
     if (force || key !== this._lastKey) { this._lastKey = key; this._render(); }
   }
 
@@ -332,7 +343,7 @@ class SchoolPlannerCard extends HTMLElement {
   _lessonHtml(l, now) {
     const t = this._t;
     const meta = [l.room, l.teacher].filter(Boolean).map(spEsc).join(" · ");
-    return `<div class="lesson ${now ? "now" : ""}" style="--c:${spEsc(spSubjectColor(l))}">
+    return `<div class="lesson ${now ? "now" : ""}" style="--c:${spEsc(spSubjectColor(l, this._data?.subjects))}" title="${spEsc(this._data?.subjects?.[spSubjectKey(l.subject)]?.name || "")}">
       <div class="t">${l.start}<br>${l.end}</div>
       <div><div class="s">${spEsc(l.subject)}</div>${meta ? `<div class="m">${meta}</div>` : ""}</div>
       ${now ? `<span class="badge">${t.now}</span>` : ""}</div>`;
@@ -386,7 +397,7 @@ class SchoolPlannerCard extends HTMLElement {
           const l = perDay[di].find((x) => x.start === slot.start && x.end === slot.end);
           if (!l) return `<div class="none"></div>`;
           const isNow = i === todayIdx && nowM >= spMin(l.start) && nowM < spMin(l.end);
-          return `<div class="lesson cell ${isNow ? "now" : ""}" style="--c:${spEsc(spSubjectColor(l))}"><div class="s">${spEsc(l.subject)}</div>${l.room ? `<div class="m">${spEsc(l.room)}</div>` : ""}${isNow ? `<span class="badge">${t.now}</span>` : ""}</div>`;
+          return `<div class="lesson cell ${isNow ? "now" : ""}" style="--c:${spEsc(spSubjectColor(l, this._data?.subjects))}" title="${spEsc(this._data?.subjects?.[spSubjectKey(l.subject)]?.name || "")}"><div class="s">${spEsc(l.subject)}</div>${l.room ? `<div class="m">${spEsc(l.room)}</div>` : ""}${isNow ? `<span class="badge">${t.now}</span>` : ""}</div>`;
         }).join("");
         return (gap >= 20 ? `<div class="sep">${t.pause} · ${gap} ${t.min}</div>` : "")
           + `<div class="tm">${spEsc(slot.start)}<br>${spEsc(slot.end)}</div>${cells}`;
@@ -458,14 +469,16 @@ class SchoolPlannerCard extends HTMLElement {
   _renderEdit() {
     const t = this._t;
     const ed = this._edit;
-    const tabs = ["children", "schools", "design"].map((k) => `<button class="chip ${ed.tab === k ? "active" : ""}" data-act="etab" data-id="${k}">${t[k]}</button>`).join("");
+    const tabs = ["children", "schools", "subjects", "design"].map((k) => `<button class="chip ${ed.tab === k ? "active" : ""}" data-act="etab" data-id="${k}">${t[k]}</button>`).join("");
     const err = ed.error ? `<div class="notice" style="color:#e5484d">${spEsc(ed.error)}</div>` : "";
     let inner;
-    if (ed.draft) inner = ed.draft.kind === "child" ? this._childForm(ed.draft) : this._schoolForm(ed.draft);
+    if (ed.draft) inner = ed.draft.kind === "child" ? this._childForm(ed.draft) : ed.draft.kind === "subject" ? this._subjectForm(ed.draft) : this._schoolForm(ed.draft);
     else if (ed.tab === "children") {
       inner = this._children.map((c) => `<div class="list-item"><span class="chip" style="--c:${spEsc(c.color)}"><span class="dot"></span></span><div class="grow">${spEsc(c.name)}<div class="sub">${spEsc(this._school(c)?.name || "")}</div></div>
         <button class="btn" data-act="edit-child" data-id="${spEsc(c.id)}">${t.edit}</button></div>`).join("")
         + `<p><button class="btn primary" data-act="new-child">${t.newChild}</button></p>`;
+    } else if (ed.tab === "subjects") {
+      inner = this._subjectsList();
     } else if (ed.tab === "schools") {
       inner = Object.entries(this._data.schools).map(([id, s]) => `<div class="list-item"><div class="grow">${spEsc(s.name)}<div class="sub">${spEsc(s.address)}</div></div>
         <button class="btn" data-act="edit-school" data-id="${spEsc(id)}">${t.edit}</button></div>`).join("")
@@ -479,6 +492,37 @@ class SchoolPlannerCard extends HTMLElement {
         <label style="display:flex;gap:8px;align-items:center;color:var(--sp-text)"><input type="checkbox" data-f="sidebar" ${s.sidebar === false ? "" : "checked"}>${t.sidebar}</label></div>`;
     }
     return `<div class="row" style="margin-bottom:12px">${ed.draft ? "" : tabs}</div>${inner}${err}<div class="notice">${t.adminOnly}</div>`;
+  }
+
+  _subjectsList() {
+    const t = this._t;
+    const user = this._data.subjects || {};
+    const seen = new Map();
+    for (const c of this._children) {
+      const lists = Object.values(c.timetable || {}).concat(Object.values(c.overrides || {}).map((o) => o.lessons || []));
+      for (const day of lists) for (const l of day) if (l.subject && !seen.has(spSubjectKey(l.subject))) seen.set(spSubjectKey(l.subject), l.subject);
+    }
+    for (const [key, v] of Object.entries(user)) if (!seen.has(key)) seen.set(key, v.label || key);
+    const rows = [...seen.entries()].sort((a, b) => a[1].localeCompare(b[1])).map(([key, label]) => {
+      const u = user[key] || {};
+      const color = spSubjectColor({ subject: label }, user);
+      const custom = !!(u.color || u.name);
+      return `<div class="srow" data-label="${spEsc(label)}" data-hascolor="${u.color ? "1" : "0"}">
+        <span class="abbr">${spEsc(label)}</span>
+        <input data-sk="${spEsc(key)}" data-sf="name" placeholder="${t.fullName}" value="${spEsc(u.name || "")}">
+        <input type="color" data-sk="${spEsc(key)}" data-sf="color" value="${spEsc(color)}">
+        ${custom ? `<button class="btn" data-act="reset-subject" data-id="${spEsc(key)}">${t.resetColor}</button>` : "<span></span>"}</div>`;
+    }).join("");
+    return `<div class="notice" style="margin:0 0 8px">${t.subjectsHint}</div>${rows || ""}
+      <p><button class="btn primary" data-act="new-subject">${t.newSubject}</button></p>`;
+  }
+
+  _subjectForm(d) {
+    const t = this._t;
+    return `<div class="form"><label>${t.abbr}<input data-f="label" maxlength="30" value="${spEsc(d.label)}"></label>
+      <label>${t.fullName}<input data-f="name" maxlength="60" value="${spEsc(d.name)}"></label>
+      <label>${t.color}<input type="color" data-f="color" value="${spEsc(d.color)}"></label>
+      <div class="row"><button class="btn primary" data-act="save-subject">${t.save}</button><button class="btn" data-act="cancel">${t.cancel}</button></div></div>`;
   }
 
   _childForm(d) {
@@ -555,6 +599,15 @@ class SchoolPlannerCard extends HTMLElement {
       if (e.type === "change" && (el.dataset.f !== "pickup_label" || el.value.trim())) this._ws({ type: "school_planner/save_settings", [el.dataset.f]: el.value.trim() });
       return;
     }
+    if (el.dataset.sk !== undefined) {
+      if (e.type !== "change") return;
+      const row = el.closest(".srow");
+      const colorEl = row.querySelector('[data-sf="color"]');
+      // A colour is only stored once the user picked one; editing just the name keeps the default colour.
+      const keepColor = el.dataset.sf === "color" || row.dataset.hascolor === "1";
+      this._ws({ type: "school_planner/save_subject", subject: row.dataset.label, name: row.querySelector('[data-sf="name"]').value.trim(), color: keepColor ? colorEl.value : null });
+      return;
+    }
     if (!d) return;
     if (d.kind === "day") {
       if (el.dataset.dl !== undefined) d.lessons[Number(el.dataset.dl)][el.dataset.lf] = el.value;
@@ -589,6 +642,14 @@ class SchoolPlannerCard extends HTMLElement {
       case "day": this._date = id === "0" ? new Date() : new Date(this._date.getTime() + Number(id) * 86400000); break;
       case "etab": ed.tab = id; break;
       case "edit-day": this._openDay(id); break;
+      case "reset-subject":
+        if (await this._ws({ type: "school_planner/delete_subject", subject: id })) { await this._load(); return; }
+        return;
+      case "new-subject": ed.draft = { kind: "subject", label: "", name: "", color: "#4c8df6" }; break;
+      case "save-subject":
+        if (!d.label.trim()) { ed.error = this._t.abbr; break; }
+        if (await this._ws({ type: "school_planner/save_subject", subject: d.label.trim(), name: d.name.trim(), color: d.color })) { ed.draft = null; await this._load(); return; }
+        return;
       case "save-day": {
         const lessons = d.lessons.filter((l) => l.subject.trim()).map((l) => ({ ...l, subject: l.subject.trim() }));
         let msg;

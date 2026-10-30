@@ -25,6 +25,11 @@ from .const import (
 )
 
 
+def subject_key(subject: str) -> str:
+    """Normalise a subject abbreviation: case and whitespace do not matter."""
+    return "".join(subject.lower().split())
+
+
 def _empty() -> dict[str, Any]:
     return {
         "settings": {
@@ -36,6 +41,7 @@ def _empty() -> dict[str, Any]:
         },
         "schools": {},
         "children": {},
+        "subjects": {},
     }
 
 
@@ -138,6 +144,27 @@ class PlannerStore:
         """Drop overrides that lie far in the past."""
         limit = (dt_util.now().date() - timedelta(days=OVERRIDE_KEEP_DAYS)).isoformat()
         child["overrides"] = {d: o for d, o in child["overrides"].items() if d >= limit}
+
+    # -- subjects ---------------------------------------------------------
+
+    @callback
+    def upsert_subject(self, subject: str, *, name: str, color: str | None) -> None:
+        """Set the colour and full name of a subject abbreviation."""
+        key = subject_key(subject)
+        if not key:
+            raise ValueError("empty subject")
+        self.data["subjects"][key] = {
+            "label": subject.strip(),
+            "name": name.strip(),
+            "color": color,
+        }
+        self._changed()
+
+    @callback
+    def delete_subject(self, subject: str) -> None:
+        """Return a subject to its default colour and no full name."""
+        if self.data["subjects"].pop(subject_key(subject), None) is not None:
+            self._changed()
 
     # -- schools ----------------------------------------------------------
 

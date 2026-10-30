@@ -216,6 +216,34 @@
           "description": "Date to revert."
         }
       }
+    },
+    "set_subject": {
+      "name": "Set a subject",
+      "description": "Sets colour and full name for a subject abbreviation. Case and spaces do not matter.",
+      "fields": {
+        "subject": {
+          "name": "Abbreviation",
+          "description": "As the subject appears in the timetable."
+        },
+        "name": {
+          "name": "Full name",
+          "description": "Full name, optional."
+        },
+        "color": {
+          "name": "Colour",
+          "description": "Hex colour such as #4C8DF6, empty for the default colour."
+        }
+      }
+    },
+    "remove_subject": {
+      "name": "Reset a subject",
+      "description": "Removes the custom colour and full name; the subject uses its default colour again.",
+      "fields": {
+        "subject": {
+          "name": "Abbreviation",
+          "description": "Subject abbreviation."
+        }
+      }
     }
   }
 }

@@ -181,6 +181,7 @@ async def test_existing_data_gets_new_defaults(hass: HomeAssistant, hass_storage
     assert data["children"]["c1"]["homeward"] == "pickup"
     assert data["children"]["c1"]["overrides"] == {}
     assert data["settings"]["pickup_label"] == "Abholung"
+    assert data["subjects"] == {}
     assert data["settings"]["theme"] == "night"
     assert data["children"]["c1"]["timetable"]["0"][0]["subject"] == "Art"
 
@@ -193,7 +194,7 @@ def test_services_yaml_matches_registered_services() -> None:
 
     path = pathlib.Path(__file__).parent.parent / "custom_components" / "school_planner" / "services.yaml"
     described = yaml.safe_load(path.read_text())
-    assert set(described) == {"set_lessons", "set_day_override", "clear_day_override"}
+    assert set(described) == {"set_lessons", "set_day_override", "clear_day_override", "set_subject", "remove_subject"}
     for service, body in described.items():
         assert all(isinstance(key, str) for key in body["fields"]), service
 
@@ -230,3 +231,27 @@ async def test_lesson_style_setting(hass: HomeAssistant, hass_ws_client) -> None
     await client.send_json({"id": 2, "type": f"{DOMAIN}/save_settings", "lesson_style": "neon"})
     assert not (await client.receive_json())["success"]
     assert store.data["settings"]["lesson_style"] == "solid"
+
+
+async def test_subject_colours_and_names(hass: HomeAssistant, hass_ws_client) -> None:
+    entry = await _setup(hass)
+    store = entry.runtime_data.store
+    client = await hass_ws_client(hass)
+
+    await client.send_json(
+        {"id": 1, "type": f"{DOMAIN}/save_subject", "subject": " Ma ", "name": "Mathematik", "color": "#112233"}
+    )
+    assert (await client.receive_json())["success"]
+    assert store.data["subjects"]["ma"] == {"label": "Ma", "name": "Mathematik", "color": "#112233"}
+
+    # case and spaces do not matter; leaving the colour out returns to the default colour
+    await hass.services.async_call(DOMAIN, "set_subject", {"subject": "MA", "name": "Mathe"}, blocking=True)
+    assert store.data["subjects"]["ma"] == {"label": "MA", "name": "Mathe", "color": None}
+
+    await client.send_json({"id": 2, "type": f"{DOMAIN}/save_subject", "subject": "Ma", "color": "red"})
+    assert not (await client.receive_json())["success"]
+
+    await client.send_json({"id": 3, "type": f"{DOMAIN}/delete_subject", "subject": "ma"})
+    assert (await client.receive_json())["success"]
+    assert store.data["subjects"] == {}
+    await hass.services.async_call(DOMAIN, "remove_subject", {"subject": "ma"}, blocking=True)

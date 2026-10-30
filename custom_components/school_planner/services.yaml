@@ -53,3 +53,29 @@ clear_day_override:
       example: "2026-11-05"
       selector:
         date:
+
+set_subject:
+  fields:
+    subject:
+      required: true
+      example: "Ma"
+      selector:
+        text:
+    name:
+      required: false
+      example: "Mathematik"
+      selector:
+        text:
+    color:
+      required: false
+      example: "#4C8DF6"
+      selector:
+        text:
+
+remove_subject:
+  fields:
+    subject:
+      required: true
+      example: "Ma"
+      selector:
+        text:

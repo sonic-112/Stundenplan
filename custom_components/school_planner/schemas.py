@@ -64,6 +64,12 @@ CHILD_FIELDS = {
     vol.Optional("timetable"): TIMETABLE_SCHEMA,
 }
 
+SUBJECT_FIELDS = {
+    vol.Required("subject"): vol.All(cv.string, vol.Length(min=1, max=30)),
+    vol.Optional("name", default=""): vol.All(cv.string, vol.Length(max=60)),
+    vol.Optional("color"): vol.Any(None, vol.Match(COLOR_RE)),
+}
+
 SCHOOL_FIELDS = {
     vol.Required("name"): vol.All(cv.string, vol.Length(min=1, max=80)),
     vol.Optional("address", default=""): vol.All(cv.string, vol.Length(max=200)),

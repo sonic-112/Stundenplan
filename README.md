@@ -8,7 +8,7 @@
 
 Home-Assistant-Integration für Stundenpläne mehrerer Kinder – mit Dashboard-Karte, Vergleich der Schulzeiten und Abholübersicht.
 
-> Status: frühe Version (0.1.2-beta.3, Beta).
+> Status: frühe Version (0.1.2-beta.4, Beta).
 
 ## Installation über HACS
 
@@ -34,7 +34,7 @@ Die Integration legt in der Seitenleiste den Eintrag **Schulplaner** an. Er zeig
 
 ## Aussehen
 
-Unter **Konfigurieren → Design** (oder in der Karte unter Bearbeiten → Design) wählst du den **Farbstil der Stunden**: *Getönt* (Standard), *Vollfarbe* oder *Rand*. Jedes Fach hat eine feste Farbe, damit dasselbe Fach bei allen Kindern gleich aussieht. Die laufende Stunde ist mit „Jetzt“ markiert. Die Wochenansicht zeigt jedes Kind als Raster (Zeilen sind die Stunden, Spalten die Tage); Tage mit einer Änderung tragen einen Punkt.
+Unter **Konfigurieren → Design** (oder in der Karte unter Bearbeiten → Design) wählst du den **Farbstil der Stunden**: *Getönt* (Standard), *Vollfarbe* oder *Rand*. Jedes Fach hat eine Standardfarbe, damit dasselbe Fach bei allen Kindern gleich aussieht. Unter **Bearbeiten → Fächer** legst du für jedes Kürzel aus deinen Plänen eine eigene Farbe und einen Klartext fest (auch für Kürzel, die noch in keinem Plan vorkommen). Groß- und Kleinschreibung und Leerzeichen spielen keine Rolle, „Zurücksetzen“ stellt die Standardfarbe wieder her. Ein Klartext erscheint als Tooltip an der Stunde. Die laufende Stunde ist mit „Jetzt“ markiert. Die Wochenansicht zeigt jedes Kind als Raster (Zeilen sind die Stunden, Spalten die Tage); Tage mit einer Änderung tragen einen Punkt.
 
 ## Karte
 
@@ -59,7 +59,7 @@ pip install -r requirements_test.txt
 pytest
 ```
 
-Dienste: `school_planner.set_lessons` (Standardplan eines Wochentags), `school_planner.set_day_override` und `school_planner.clear_day_override` (einzelnes Datum).
+Dienste: `school_planner.set_lessons` (Standardplan eines Wochentags), `school_planner.set_day_override` und `school_planner.clear_day_override` (einzelnes Datum), `school_planner.set_subject` und `school_planner.remove_subject` (Farbe und Klartext eines Fachs).
 
 Was als Nächstes kommt und was später geplant ist, steht in der [ROADMAP](ROADMAP.md).
 

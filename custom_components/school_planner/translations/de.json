@@ -216,6 +216,34 @@
           "description": "Zurückzusetzender Tag."
         }
       }
+    },
+    "set_subject": {
+      "name": "Fach festlegen",
+      "description": "Legt Farbe und Klartext für ein Fachkürzel fest. Groß- und Kleinschreibung und Leerzeichen spielen keine Rolle.",
+      "fields": {
+        "subject": {
+          "name": "Kürzel",
+          "description": "So steht das Fach im Stundenplan."
+        },
+        "name": {
+          "name": "Klartext",
+          "description": "Ausgeschriebener Name, optional."
+        },
+        "color": {
+          "name": "Farbe",
+          "description": "Hex-Farbe wie #4C8DF6, leer für die Standardfarbe."
+        }
+      }
+    },
+    "remove_subject": {
+      "name": "Fach zurücksetzen",
+      "description": "Entfernt eigene Farbe und Klartext, das Fach nutzt wieder die Standardfarbe.",
+      "fields": {
+        "subject": {
+          "name": "Kürzel",
+          "description": "Fachkürzel."
+        }
+      }
     }
   }
 }

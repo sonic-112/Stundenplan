@@ -10,7 +10,14 @@ from homeassistant.components import websocket_api
 from homeassistant.core import HomeAssistant, callback
 
 from .const import DOMAIN
-from .schemas import CHILD_FIELDS, OVERRIDE_FIELDS, SCHOOL_FIELDS, SETTINGS_FIELDS, iso_date
+from .schemas import (
+    CHILD_FIELDS,
+    OVERRIDE_FIELDS,
+    SCHOOL_FIELDS,
+    SETTINGS_FIELDS,
+    SUBJECT_FIELDS,
+    iso_date,
+)
 
 
 def _store(hass: HomeAssistant):
@@ -43,6 +50,8 @@ def async_register_websocket_api(hass: HomeAssistant) -> None:
         ws_save_settings,
         ws_save_override,
         ws_clear_override,
+        ws_save_subject,
+        ws_delete_subject,
     ):
         websocket_api.async_register_command(hass, handler)
 
@@ -180,4 +189,28 @@ def ws_clear_override(hass, connection, msg, store) -> None:
     except KeyError:
         connection.send_error(msg["id"], "not_found", "Unknown child")
         return
+    connection.send_result(msg["id"])
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): f"{DOMAIN}/save_subject", **SUBJECT_FIELDS}
+)
+@websocket_api.require_admin
+@callback
+@_require_store
+def ws_save_subject(hass, connection, msg, store) -> None:
+    """Set colour and full name for a subject abbreviation."""
+    store.upsert_subject(msg["subject"], name=msg["name"], color=msg.get("color"))
+    connection.send_result(msg["id"])
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): f"{DOMAIN}/delete_subject", vol.Required("subject"): str}
+)
+@websocket_api.require_admin
+@callback
+@_require_store
+def ws_delete_subject(hass, connection, msg, store) -> None:
+    """Return a subject to its default colour."""
+    store.delete_subject(msg["subject"])
     connection.send_result(msg["id"])

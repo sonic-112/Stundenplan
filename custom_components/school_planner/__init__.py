@@ -22,7 +22,7 @@ from homeassistant.loader import async_get_integration
 
 from .const import CARD_FILE, DOMAIN, PANEL_ELEMENT, PANEL_FILE, PANEL_PATH, URL_BASE
 from .coordinator import SchoolPlannerCoordinator
-from .schemas import LESSON_SCHEMA, OVERRIDE_FIELDS, iso_date
+from .schemas import LESSON_SCHEMA, OVERRIDE_FIELDS, SUBJECT_FIELDS, iso_date
 from .store import PlannerStore
 from .websocket_api import async_register_websocket_api
 
@@ -43,6 +43,8 @@ SET_DAY_OVERRIDE_SCHEMA = vol.Schema({vol.Required("child"): cv.string, **OVERRI
 CLEAR_DAY_OVERRIDE_SCHEMA = vol.Schema(
     {vol.Required("child"): cv.string, vol.Required("date"): iso_date}
 )
+SET_SUBJECT_SCHEMA = vol.Schema(SUBJECT_FIELDS)
+REMOVE_SUBJECT_SCHEMA = vol.Schema({vol.Required("subject"): cv.string})
 
 
 @dataclass
@@ -115,6 +117,22 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         store, child_id = _find_child(call)
         store.clear_override(child_id, call.data["date"])
 
+    def _store(call: ServiceCall) -> PlannerStore:
+        entries = hass.config_entries.async_loaded_entries(DOMAIN)
+        if not entries:
+            raise ServiceValidationError("School Planner is not set up")
+        return entries[0].runtime_data.store
+
+    async def set_subject(call: ServiceCall) -> None:
+        _store(call).upsert_subject(
+            call.data["subject"], name=call.data["name"], color=call.data.get("color")
+        )
+
+    async def remove_subject(call: ServiceCall) -> None:
+        _store(call).delete_subject(call.data["subject"])
+
+    hass.services.async_register(DOMAIN, "set_subject", set_subject, SET_SUBJECT_SCHEMA)
+    hass.services.async_register(DOMAIN, "remove_subject", remove_subject, REMOVE_SUBJECT_SCHEMA)
     hass.services.async_register(DOMAIN, "set_lessons", set_lessons, SET_LESSONS_SCHEMA)
     hass.services.async_register(
         DOMAIN, "set_day_override", set_day_override, SET_DAY_OVERRIDE_SCHEMA
